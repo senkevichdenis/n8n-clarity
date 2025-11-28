@@ -45,19 +45,25 @@ const Index = () => {
   const loadWorkflows = async () => {
     setLoadingWorkflows(true);
     try {
-      // This would use the MCP n8n integration
-      // For now, showing mock data structure
-      const mockWorkflows: Workflow[] = [
-        { id: "1", name: "Example Workflow 1", active: true },
-        { id: "2", name: "Example Workflow 2", active: false },
-      ];
-      setWorkflows(mockWorkflows);
+      const response = await fetch("/api/n8n/workflows");
+      if (!response.ok) {
+        throw new Error("Failed to fetch workflows from n8n via MCP");
+      }
+      const data = await response.json();
+      const workflowsList: Workflow[] = data.workflows.map((wf: any) => ({
+        id: wf.id,
+        name: wf.name,
+        active: wf.active,
+      }));
+      setWorkflows(workflowsList);
     } catch (error) {
+      console.error("Error loading workflows:", error);
       toast({
         title: "Failed to Load Workflows",
-        description: "Could not fetch workflows from n8n. Please check your MCP connection.",
+        description: "Could not fetch workflows from n8n via MCP. Please check your MCP connection and n8n setup.",
         variant: "destructive",
       });
+      setWorkflows([]);
     } finally {
       setLoadingWorkflows(false);
     }
@@ -65,25 +71,22 @@ const Index = () => {
 
   const loadWorkflowDetails = async (workflowId: string) => {
     try {
-      // This would use MCP n8n get_workflow_details
-      // Mock data for now
-      const mockDetails: WorkflowDetails = {
-        id: workflowId,
-        name: `Workflow ${workflowId}`,
-        nodes: [],
-        connections: {},
-        settings: {},
-        active: true,
-      };
-      setWorkflowDetails(mockDetails);
-      setChatMessages([]); // Clear chat when switching workflows
-      setSummaryContent(null); // Clear summary
+      const response = await fetch(`/api/n8n/workflow/${workflowId}`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch workflow details from n8n via MCP");
+      }
+      const data = await response.json();
+      setWorkflowDetails(data.workflow);
+      setChatMessages([]);
+      setSummaryContent(null);
     } catch (error) {
+      console.error("Error loading workflow details:", error);
       toast({
         title: "Failed to Load Workflow Details",
-        description: "Could not fetch workflow details from n8n.",
+        description: "Could not fetch workflow details from n8n via MCP. Please check your connection.",
         variant: "destructive",
       });
+      setWorkflowDetails(null);
     }
   };
 
@@ -115,19 +118,23 @@ const Index = () => {
 
     setIsGenerating(true);
     try {
+      // Refresh workflow details from n8n before generating
+      const detailsResponse = await fetch(`/api/n8n/workflow/${workflowDetails.id}`);
+      if (!detailsResponse.ok) {
+        throw new Error("Failed to fetch current workflow data from n8n via MCP");
+      }
+      const detailsData = await detailsResponse.json();
+      const currentWorkflowDetails = detailsData.workflow;
+      
       let executionsSummary: ExecutionsSummary | undefined;
       
       if (mode === "Executions Summary") {
-        // Would fetch from MCP n8n get_workflow_executions_summary
-        executionsSummary = {
-          total: 100,
-          successful: 95,
-          failed: 5,
-          avgDuration: 2500,
-          longestDuration: 5000,
-          shortestDuration: 1000,
-          timeRange: "Last 7 days",
-        };
+        const executionsResponse = await fetch(`/api/n8n/workflow/${workflowDetails.id}/executions`);
+        if (!executionsResponse.ok) {
+          throw new Error("Failed to fetch execution summary from n8n via MCP");
+        }
+        const executionsData = await executionsResponse.json();
+        executionsSummary = executionsData.summary;
       }
 
       const result = await generateAnalysis(
@@ -135,7 +142,7 @@ const Index = () => {
         selectedModel,
         audience,
         mode,
-        workflowDetails,
+        currentWorkflowDetails,
         executionsSummary
       );
 
@@ -148,7 +155,7 @@ const Index = () => {
       console.error("Generation error:", error);
       toast({
         title: "Generation Failed",
-        description: error instanceof Error ? error.message : "An error occurred while generating the analysis.",
+        description: error instanceof Error ? error.message : "Could not get workflow data from n8n via MCP. Please check your connection.",
         variant: "destructive",
       });
     } finally {
