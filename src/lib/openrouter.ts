@@ -144,3 +144,250 @@ export async function sendChatMessage(
   const data = await response.json();
   return data.choices[0]?.message?.content || "No response generated";
 }
+
+export type DocumentationType = "Basic Tech Doc" | "Extended Tech Doc" | "Ops Runbook" | "QA Checklist";
+
+function getDocumentationSystemPrompt(docType: DocumentationType): string {
+  const prompts = {
+    "Basic Tech Doc": `You are generating a Basic Technical Documentation for an n8n workflow.
+
+Target audience: Engineers familiar with n8n and automation.
+
+Output MUST be valid markdown ONLY (no surrounding commentary).
+
+Required structure:
+1) Title and basic info (workflow name, ID, status)
+2) Purpose & Context (based only on workflow JSON)
+3) Triggers & Inputs
+4) High-Level Data Flow
+5) Outputs & Side Effects
+6) Configuration & Dependencies (high level)
+7) Error Handling Overview
+
+CRITICAL RULES:
+- Only use information from the provided workflow JSON
+- Do NOT invent business processes, SLAs, or metrics
+- If something is unclear, state it explicitly or stay generic
+- Output must be clean markdown with no extra commentary`,
+
+    "Extended Tech Doc": `You are generating Extended Technical Documentation for an n8n workflow.
+
+Target audience: Senior engineers, maintainers, integrators.
+
+Output MUST be valid markdown ONLY (no surrounding commentary).
+
+Include everything from Basic Tech Doc PLUS:
+8) Node Inventory (Technical Reference) - table of all nodes
+9) Integration & API Overview - grouped by external system
+10) Data Contracts (High-Level) - key fields and transformations
+11) Security & Privacy Notes (Structural) - credentials and sensitive data patterns
+12) Performance & Scalability Considerations (Structural Only) - loops, bottlenecks
+
+CRITICAL RULES:
+- Only use information from the provided workflow JSON and executions
+- Do NOT invent throughput numbers or infrastructure details
+- Do NOT assume compliance standards
+- Output must be clean markdown with no extra commentary`,
+
+    "Ops Runbook": `You are generating an Operational Runbook for an n8n workflow.
+
+Target audience: On-call engineers and operators.
+
+Output MUST be valid markdown ONLY (no surrounding commentary).
+
+Required structure:
+1) Overview for Operators
+2) How to Run / Rerun
+3) Prerequisites Checklist
+4) Normal Execution Path (Short)
+5) Known Failure Points (based on executions if available)
+6) Troubleshooting Steps (Playbook) - 3-7 steps per common issue
+7) Escalation Guidelines (Generic)
+
+CRITICAL RULES:
+- Base failure analysis on execution data when available
+- If no execution data, base on structural risk analysis
+- Steps must be concrete but generic (no company-specific tools)
+- Output must be clean markdown with no extra commentary`,
+
+    "QA Checklist": `You are generating a QA Testing Checklist for an n8n workflow.
+
+Target audience: QA engineers and developers writing tests.
+
+Output MUST be valid markdown ONLY (no surrounding commentary).
+
+Required structure:
+1) Scope and Purpose
+2) Happy Path Scenarios (2-5 scenarios)
+3) Negative / Error Scenarios
+4) Boundary / Edge Cases
+5) Regression / Integration Checks
+
+For each scenario include:
+- Short name
+- Preconditions
+- Steps
+- Expected result
+
+CRITICAL RULES:
+- Base scenarios on workflow structure (If/Switch, loops, external calls)
+- Do NOT assume specific test tools
+- Do NOT invent exact payloads beyond realistic examples
+- Output must be clean markdown with no extra commentary`,
+  };
+
+  return prompts[docType];
+}
+
+export async function generateDocumentation(
+  apiKey: string,
+  model: string,
+  docType: DocumentationType,
+  workflowDetails: WorkflowDetails,
+  executionsData?: any
+): Promise<string> {
+  const systemPrompt = getDocumentationSystemPrompt(docType);
+  
+  let userPrompt = `Generate ${docType} for the following n8n workflow:\n\nWorkflow Name: ${workflowDetails.name}\nWorkflow ID: ${workflowDetails.id}\nStatus: ${workflowDetails.active ? "Active" : "Inactive"}\n\n`;
+  
+  userPrompt += `Workflow Structure:\n${JSON.stringify(
+    {
+      nodes: workflowDetails.nodes,
+      connections: workflowDetails.connections,
+      settings: workflowDetails.settings,
+    },
+    null,
+    2
+  )}\n\n`;
+
+  if (executionsData) {
+    userPrompt += `Execution Data:\n${JSON.stringify(executionsData, null, 2)}\n\n`;
+  }
+
+  const response = await fetch(OPENROUTER_API_URL, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model,
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
+      ],
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`OpenRouter API error: ${response.status} - ${errorText}`);
+  }
+
+  const data = await response.json();
+  return data.choices[0]?.message?.content || "No documentation generated";
+}
+
+export async function editDocumentation(
+  apiKey: string,
+  model: string,
+  currentMarkdown: string,
+  instruction: string
+): Promise<string> {
+  const systemPrompt = `You are a documentation editor for n8n workflows.
+
+You receive:
+- The current documentation as markdown
+- An editing instruction from the user
+
+Your job: Return the UPDATED documentation as a full markdown document.
+
+CRITICAL RULES:
+- Output ONLY the final markdown (no explanations, no comments, no diff format)
+- Apply the user's instruction exactly
+- Maintain the overall structure and tone
+- Do NOT add commentary about what you changed`;
+
+  const userPrompt = `Current documentation:\n\n${currentMarkdown}\n\n---\n\nInstruction: ${instruction}\n\nProvide the updated documentation:`;
+
+  const response = await fetch(OPENROUTER_API_URL, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model,
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
+      ],
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`OpenRouter API error: ${response.status} - ${errorText}`);
+  }
+
+  const data = await response.json();
+  return data.choices[0]?.message?.content || currentMarkdown;
+}
+
+export async function generateStickyNotes(
+  apiKey: string,
+  model: string,
+  markdown: string
+): Promise<string> {
+  const systemPrompt = `You generate n8n Sticky Note nodes JSON based on documentation markdown.
+
+Each major documentation section must become a separate Sticky Note node.
+
+Use the standard n8n Sticky Note node format:
+- type: "n8n-nodes-base.stickyNote"
+- typeVersion: 1
+- parameters: { content, height, width }
+- id: unique UUID
+- name: descriptive name per section
+- position: [x, y] coordinates (use grid layout to avoid overlap)
+
+Section examples:
+- "Sticky Note: High-Level Overview"
+- "Sticky Note: Data Flow"
+- "Sticky Note: Configuration"
+- "Sticky Note: Error Handling"
+- "Sticky Note: Ops Runbook"
+- "Sticky Note: QA Checklist"
+
+CRITICAL RULES:
+- Output ONLY valid JSON (no explanations)
+- Must be importable into n8n
+- Create one note per major section
+- Use grid positions (e.g., increments of 300 for x and y)
+- Set reasonable height/width (e.g., 300x200)`;
+
+  const userPrompt = `Convert this documentation into n8n Sticky Note nodes:\n\n${markdown}`;
+
+  const response = await fetch(OPENROUTER_API_URL, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model,
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
+      ],
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`OpenRouter API error: ${response.status} - ${errorText}`);
+  }
+
+  const data = await response.json();
+  return data.choices[0]?.message?.content || "{}";
+}

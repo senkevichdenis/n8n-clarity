@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { Workflow, Audience, Mode } from "@/types";
+import type { DocumentationType } from "@/lib/openrouter";
 import { Loader2 } from "lucide-react";
 
 interface WorkflowControlsProps {
@@ -14,10 +15,14 @@ interface WorkflowControlsProps {
   onGenerate: () => void;
   isGenerating: boolean;
   loadingWorkflows: boolean;
+  isDocumentationMode?: boolean;
+  docType?: DocumentationType;
+  onDocTypeChange?: (docType: DocumentationType) => void;
 }
 
 const audiences: Audience[] = ["Engineer", "Manager", "Newbie"];
 const modes: Mode[] = ["Explanation", "Weak Points", "Executions Summary", "Q&A Only"];
+const docTypes: DocumentationType[] = ["Basic Tech Doc", "Extended Tech Doc", "Ops Runbook", "QA Checklist"];
 
 export function WorkflowControls({
   workflows,
@@ -30,8 +35,11 @@ export function WorkflowControls({
   onGenerate,
   isGenerating,
   loadingWorkflows,
+  isDocumentationMode = false,
+  docType,
+  onDocTypeChange,
 }: WorkflowControlsProps) {
-  const canGenerate = selectedWorkflowId && !isGenerating && mode !== "Q&A Only";
+  const canGenerate = selectedWorkflowId && !isGenerating && (!isDocumentationMode ? mode !== "Q&A Only" : true);
 
   return (
     <div className="flex items-center gap-4 mb-6 flex-wrap">
@@ -52,37 +60,57 @@ export function WorkflowControls({
         </SelectContent>
       </Select>
 
-      <div className="flex items-center border border-[hsl(var(--border-subtle))] rounded overflow-hidden">
-        {audiences.map((aud) => (
-          <button
-            key={aud}
-            onClick={() => onAudienceChange(aud)}
-            className={`px-4 py-2 text-sm border-r last:border-r-0 border-[hsl(var(--border-subtle))] transition-colors ${
-              audience === aud
-                ? "bg-[hsl(var(--tab-bg-active))] text-[hsl(var(--text-main))]"
-                : "bg-transparent text-[hsl(var(--text-secondary))] hover:bg-[hsl(var(--tab-bg-active))]"
-            }`}
-          >
-            {aud}
-          </button>
-        ))}
-      </div>
+      {!isDocumentationMode ? (
+        <>
+          <div className="flex items-center border border-[hsl(var(--border-subtle))] rounded overflow-hidden">
+            {audiences.map((aud) => (
+              <button
+                key={aud}
+                onClick={() => onAudienceChange(aud)}
+                className={`px-4 py-2 text-sm border-r last:border-r-0 border-[hsl(var(--border-subtle))] transition-colors ${
+                  audience === aud
+                    ? "bg-[hsl(var(--tab-bg-active))] text-[hsl(var(--text-main))]"
+                    : "bg-transparent text-[hsl(var(--text-secondary))] hover:bg-[hsl(var(--tab-bg-active))]"
+                }`}
+              >
+                {aud}
+              </button>
+            ))}
+          </div>
 
-      <div className="flex items-center border border-[hsl(var(--border-subtle))] rounded overflow-hidden">
-        {modes.map((m) => (
-          <button
-            key={m}
-            onClick={() => onModeChange(m)}
-            className={`px-4 py-2 text-sm border-r last:border-r-0 border-[hsl(var(--border-subtle))] transition-colors ${
-              mode === m
-                ? "bg-[hsl(var(--tab-bg-active))] text-[hsl(var(--text-main))]"
-                : "bg-transparent text-[hsl(var(--text-secondary))] hover:bg-[hsl(var(--tab-bg-active))]"
-            }`}
-          >
-            {m}
-          </button>
-        ))}
-      </div>
+          <div className="flex items-center border border-[hsl(var(--border-subtle))] rounded overflow-hidden">
+            {modes.map((m) => (
+              <button
+                key={m}
+                onClick={() => onModeChange(m)}
+                className={`px-4 py-2 text-sm border-r last:border-r-0 border-[hsl(var(--border-subtle))] transition-colors ${
+                  mode === m
+                    ? "bg-[hsl(var(--tab-bg-active))] text-[hsl(var(--text-main))]"
+                    : "bg-transparent text-[hsl(var(--text-secondary))] hover:bg-[hsl(var(--tab-bg-active))]"
+                }`}
+              >
+                {m}
+              </button>
+            ))}
+          </div>
+        </>
+      ) : (
+        <div className="flex items-center border border-[hsl(var(--border-subtle))] rounded overflow-hidden">
+          {docTypes.map((dt) => (
+            <button
+              key={dt}
+              onClick={() => onDocTypeChange?.(dt)}
+              className={`px-4 py-2 text-sm border-r last:border-r-0 border-[hsl(var(--border-subtle))] transition-colors ${
+                docType === dt
+                  ? "bg-[hsl(var(--tab-bg-active))] text-[hsl(var(--text-main))]"
+                  : "bg-transparent text-[hsl(var(--text-secondary))] hover:bg-[hsl(var(--tab-bg-active))]"
+              }`}
+            >
+              {dt}
+            </button>
+          ))}
+        </div>
+      )}
 
       <Button
         onClick={onGenerate}
@@ -94,6 +122,8 @@ export function WorkflowControls({
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             Generating...
           </>
+        ) : isDocumentationMode ? (
+          "Generate Documentation"
         ) : (
           "Generate"
         )}
