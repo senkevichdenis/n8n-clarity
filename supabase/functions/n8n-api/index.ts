@@ -70,8 +70,20 @@ serve(async (req) => {
       );
     }
 
+    // For single workflow endpoint, normalize response
+    if (endpoint.startsWith("/api/v1/workflows/")) {
+      return new Response(
+        JSON.stringify({ data: data.data }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        }
+      );
+    }
+
+    // For other endpoints (executions, etc.), normalize response
     return new Response(
-      JSON.stringify(data),
+      JSON.stringify({ data: data.data || data }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,

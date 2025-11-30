@@ -49,6 +49,12 @@ const Index = () => {
     const n8nBaseUrl = getN8nBaseUrl();
     const n8nApiKey = getN8nApiKey();
 
+    console.log("[Explain] workflows list request", {
+      endpoint: "/api/v1/workflows",
+      hasBaseUrl: !!n8nBaseUrl,
+      hasApiKey: !!n8nApiKey
+    });
+
     if (!n8nBaseUrl || !n8nApiKey) {
       toast({
         title: "n8n Configuration Required",
@@ -77,11 +83,17 @@ const Index = () => {
         }
       );
 
+      const data = await response.json();
+      
+      console.log("[Explain] workflows list response", {
+        status: response.status,
+        count: data?.data?.length || 0
+      });
+
       if (!response.ok) {
         throw new Error("Failed to fetch workflows from n8n");
       }
 
-      const data = await response.json();
       const workflowsList: Workflow[] = data.data.map((wf: any) => ({
         id: wf.id,
         name: wf.name,
@@ -96,7 +108,7 @@ const Index = () => {
         });
       }
     } catch (error) {
-      console.error("Error loading workflows:", error);
+      console.error("[Explain] Error loading workflows:", error);
       toast({
         title: "Failed to Load Workflows",
         description: "Could not fetch workflows from n8n. Please check your n8n configuration.",
@@ -159,6 +171,11 @@ const Index = () => {
   };
 
   const handleWorkflowChange = (workflowId: string) => {
+    const workflow = workflows.find(w => w.id === workflowId);
+    console.log("[Explain] workflow selected", {
+      id: workflowId,
+      name: workflow?.name
+    });
     setSelectedWorkflowId(workflowId);
     loadWorkflowDetails(workflowId);
   };
@@ -167,6 +184,13 @@ const Index = () => {
     const apiKey = getApiKey();
     const n8nBaseUrl = getN8nBaseUrl();
     const n8nApiKey = getN8nApiKey();
+
+    console.log("[Explain] Generate clicked", {
+      selectedWorkflowId,
+      hasSelectedWorkflow: !!selectedWorkflowId,
+      mode,
+      model: selectedModel,
+    });
 
     if (!apiKey) {
       toast({
@@ -188,7 +212,11 @@ const Index = () => {
       return;
     }
 
-    if (!workflowDetails) {
+    if (!selectedWorkflowId) {
+      console.warn("[Explain] Generate attempted without selected workflow", {
+        selectedWorkflowId,
+        workflowDetails,
+      });
       toast({
         title: "No Workflow Selected",
         description: "Please select a workflow first.",
@@ -200,6 +228,15 @@ const Index = () => {
     setIsGenerating(true);
     try {
       // Refresh workflow details from n8n before generating
+      const endpoint = `/api/v1/workflows/${selectedWorkflowId}`;
+      
+      console.log("[Explain] request to n8n-api", {
+        endpoint,
+        hasBaseUrl: !!n8nBaseUrl,
+        hasApiKey: !!n8nApiKey,
+        model: selectedModel,
+      });
+
       const detailsResponse = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/n8n-api`,
         {
@@ -211,16 +248,24 @@ const Index = () => {
           body: JSON.stringify({
             n8nBaseUrl,
             n8nApiKey,
-            endpoint: `/api/v1/workflows/${workflowDetails.id}`,
+            endpoint,
           }),
         }
       );
 
-      if (!detailsResponse.ok) {
+      const detailsData = await detailsResponse.json();
+
+      console.log("[Explain] n8n-api response", {
+        status: detailsResponse.status,
+        hasData: !!detailsData?.data,
+        preview: JSON.stringify(detailsData).slice(0, 300),
+      });
+
+      if (!detailsResponse.ok || !detailsData.data) {
+        console.error("[Explain] workflow load failure", detailsData);
         throw new Error("Failed to fetch current workflow data from n8n");
       }
 
-      const detailsData = await detailsResponse.json();
       const currentWorkflowDetails = detailsData.data;
 
       let executionsSummary: ExecutionsSummary | undefined;
@@ -237,7 +282,7 @@ const Index = () => {
             body: JSON.stringify({
               n8nBaseUrl,
               n8nApiKey,
-              endpoint: `/api/v1/executions?workflowId=${workflowDetails.id}&limit=50`,
+              endpoint: `/api/v1/executions?workflowId=${selectedWorkflowId}&limit=50`,
             }),
           }
         );
@@ -263,7 +308,7 @@ const Index = () => {
         description: "The workflow analysis has been completed successfully.",
       });
     } catch (error) {
-      console.error("Generation error:", error);
+      console.error("[Explain] Generation error:", error);
       toast({
         title: "Generation Failed",
         description:

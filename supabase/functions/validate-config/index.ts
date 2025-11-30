@@ -21,6 +21,8 @@ serve(async (req) => {
     // Validate OpenRouter API key
     if (openRouterKey && model) {
       try {
+        console.log("[Validate] Testing OpenRouter connection with model:", model);
+        
         const openRouterResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
           method: "POST",
           headers: {
@@ -29,18 +31,25 @@ serve(async (req) => {
           },
           body: JSON.stringify({
             model: model,
-            messages: [{ role: "user", content: "test" }],
+            messages: [{ role: "user", content: "Connection test" }],
             max_tokens: 5,
           }),
+        });
+
+        const responseData = await openRouterResponse.json().catch(() => ({}));
+        
+        console.log("[Validate] OpenRouter response", {
+          status: openRouterResponse.status,
+          bodyPreview: JSON.stringify(responseData).slice(0, 300)
         });
 
         if (openRouterResponse.ok) {
           validationResults.openRouter.valid = true;
         } else {
-          const errorData = await openRouterResponse.json().catch(() => ({}));
-          validationResults.openRouter.error = errorData.error?.message || `HTTP ${openRouterResponse.status}`;
+          validationResults.openRouter.error = responseData.error?.message || `HTTP ${openRouterResponse.status}`;
         }
       } catch (error) {
+        console.error("[Validate] OpenRouter error:", error);
         validationResults.openRouter.error = error instanceof Error ? error.message : "Network error";
       }
     }

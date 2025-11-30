@@ -68,6 +68,13 @@ export function SettingsModal({ open, onOpenChange, onSave, selectedModel }: Set
     const n8nUrlToValidate = (isEditingN8nUrl && n8nBaseUrl && !n8nBaseUrl.includes("•")) ? n8nBaseUrl : null;
     const n8nKeyToValidate = (isEditingN8nKey && n8nApiKey && !n8nApiKey.includes("•")) ? n8nApiKey : null;
 
+    console.log("[Settings] Starting validation", {
+      hasOpenRouterKey: !!openRouterKeyToValidate,
+      hasN8nUrl: !!n8nUrlToValidate,
+      hasN8nKey: !!n8nKeyToValidate,
+      selectedModel
+    });
+
     try {
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/validate-config`,
@@ -91,6 +98,14 @@ export function SettingsModal({ open, onOpenChange, onSave, selectedModel }: Set
       }
 
       const results = await response.json();
+      
+      console.log("[Settings] Validation results", {
+        openRouterValid: results.openRouter?.valid,
+        openRouterError: results.openRouter?.error,
+        n8nValid: results.n8n?.valid,
+        n8nError: results.n8n?.error
+      });
+      
       setValidationStatus(results);
 
       const openRouterValid = !openRouterKeyToValidate || results.openRouter?.valid;
@@ -100,6 +115,8 @@ export function SettingsModal({ open, onOpenChange, onSave, selectedModel }: Set
         if (openRouterKeyToValidate) saveApiKey(openRouterKeyToValidate);
         if (n8nUrlToValidate) saveN8nBaseUrl(n8nUrlToValidate);
         if (n8nKeyToValidate) saveN8nApiKey(n8nKeyToValidate);
+
+        console.log("[Settings] All validations passed, settings saved");
 
         toast({
           title: "Settings Saved",
@@ -113,6 +130,8 @@ export function SettingsModal({ open, onOpenChange, onSave, selectedModel }: Set
         if (!openRouterValid) errors.push(`OpenRouter: ${results.openRouter?.error}`);
         if (!n8nValid) errors.push(`n8n: ${results.n8n?.error}`);
         
+        console.error("[Settings] Validation failed:", errors);
+        
         toast({
           title: "Validation Failed",
           description: errors.join("; "),
@@ -120,7 +139,7 @@ export function SettingsModal({ open, onOpenChange, onSave, selectedModel }: Set
         });
       }
     } catch (error) {
-      console.error("Validation error:", error);
+      console.error("[Settings] Validation error:", error);
       toast({
         title: "Validation Error",
         description: error instanceof Error ? error.message : "Could not validate configuration.",
