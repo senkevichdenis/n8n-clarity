@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Send } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Send, Loader2 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { getApiKey } from "@/lib/storage";
@@ -93,36 +93,34 @@ export function DocumentationChat({
   };
 
   return (
-    <div className="bg-[hsl(var(--bg-panel))] border border-[hsl(var(--border-subtle))] rounded-lg h-full flex flex-col">
-      <div className="border-b border-[hsl(var(--border-subtle))] p-4">
-        <h2 className="text-lg font-semibold text-[hsl(var(--text-main))]">
-          Edit Documentation
-        </h2>
-        <p className="text-sm text-[hsl(var(--text-muted))] mt-1">
-          Give instructions to modify the documentation
-        </p>
+    <div className="bg-[hsl(var(--bg-chat))] border border-[hsl(var(--border-subtle))] rounded flex flex-col h-full">
+      <div className="p-4 border-b border-[hsl(var(--border-subtle))]">
+        <h2 className="text-lg font-bold text-[hsl(var(--text-main))]">Edit Documentation</h2>
+        <p className="text-sm text-[hsl(var(--text-muted))]">Give instructions to modify the documentation</p>
       </div>
 
-      <ScrollArea className="flex-1 p-4">
+      <ScrollArea className="flex-1 p-6">
         {messages.length === 0 ? (
-          <div className="h-full flex items-center justify-center text-[hsl(var(--text-muted))] text-center px-4">
-            Use this chat to edit the documentation with natural language instructions
+          <div className="flex items-center justify-center h-full">
+            <p className="text-[hsl(var(--text-muted))] text-center">
+              {disabled
+                ? "Generate documentation first to start editing"
+                : "Use this chat to edit the documentation with natural language instructions"}
+            </p>
           </div>
         ) : (
           <div className="space-y-4">
             {messages.map((message, index) => (
               <div
                 key={index}
-                className={`p-3 rounded-lg ${
+                className={`p-4 rounded ${
                   message.role === "user"
-                    ? "bg-[hsl(var(--bg-panel-alt))] ml-8"
-                    : "bg-[hsl(var(--bg-input))] mr-8"
+                    ? "bg-[hsl(var(--chat-user-bg))]"
+                    : "bg-[hsl(var(--chat-assistant-bg))]"
                 }`}
               >
-                <div className="text-xs font-medium text-[hsl(var(--text-muted))] mb-1">
-                  {message.role === "user" ? "You" : "Assistant"}
-                </div>
-                <div className="text-sm text-[hsl(var(--text-main))] whitespace-pre-wrap">
+                <div className="text-xs mb-2 opacity-70 capitalize">{message.role}</div>
+                <div className="prose prose-invert prose-sm max-w-none text-[hsl(var(--text-main))] whitespace-pre-wrap">
                   {message.content}
                 </div>
               </div>
@@ -131,9 +129,9 @@ export function DocumentationChat({
         )}
       </ScrollArea>
 
-      <div className="border-t border-[hsl(var(--border-subtle))] p-4">
+      <div className="p-4 border-t border-[hsl(var(--border-subtle))] bg-[hsl(var(--bg-panel-alt))]">
         <div className="flex gap-2">
-          <Textarea
+          <Input
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => {
@@ -144,20 +142,19 @@ export function DocumentationChat({
             }}
             placeholder={
               disabled
-                ? "Select a workflow and generate documentation first..."
+                ? "Generate documentation first..."
                 : "E.g., 'Shorten the overview section' or 'Add error handling details'"
             }
             disabled={disabled || isLoading}
-            className="resize-none bg-[hsl(var(--bg-input))] border-[hsl(var(--border-subtle))] text-[hsl(var(--text-main))]"
-            rows={3}
+            className="flex-1 bg-[hsl(var(--bg-input))] border-[hsl(var(--border-subtle))] text-[hsl(var(--text-main))]"
           />
           <Button
             onClick={handleSend}
             disabled={disabled || !input.trim() || isLoading}
-            className="bg-primary text-primary-foreground hover:bg-primary/90"
+            className="bg-[hsl(var(--btn-bg))] border border-[hsl(var(--btn-border))] hover:bg-[hsl(var(--btn-bg-hover))] text-[hsl(var(--text-main))]"
           >
             {isLoading ? (
-              <span className="animate-pulse">...</span>
+              <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
               <Send className="h-4 w-4" />
             )}

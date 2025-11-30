@@ -369,6 +369,7 @@ const Index = () => {
             });
             loadWorkflows();
           }}
+          selectedModel={selectedModel}
         />
       </div>
     </div>
