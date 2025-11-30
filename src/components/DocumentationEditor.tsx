@@ -110,15 +110,15 @@ export function DocumentationEditor({
           </Button>
         </div>
       </div>
-      <div className="flex-1 p-4 overflow-hidden">
+      <div className="flex-1 p-8 overflow-hidden flex flex-col">
         {isGenerating ? (
-          <div className="h-full flex items-center justify-center text-[hsl(var(--text-muted))]">
-            Generating documentation...
+          <div className="flex items-center justify-center h-full">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
           </div>
         ) : !markdown.trim() ? (
-          <div className="h-full flex items-center justify-center text-[hsl(var(--text-muted))]">
-            Select a workflow and click "Generate Documentation" to begin
-          </div>
+          <p className="text-[hsl(var(--text-muted))]">
+            Select a workflow, choose your settings, and click Generate Documentation to begin.
+          </p>
         ) : (
           <Textarea
             value={markdown}

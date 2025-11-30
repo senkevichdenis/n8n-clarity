@@ -2,3 +2,6 @@ project_id = "malpqwzdclqsoqqbbeop"
 
 [functions.n8n-api]
 verify_jwt = false
+
+[functions.validate-config]
+verify_jwt = false

@@ -60,10 +60,16 @@ export function DocumentationBuilder({
       );
 
       if (!response.ok) {
-        throw new Error("Failed to fetch workflow details from n8n");
+        const errorText = await response.text();
+        throw new Error(errorText || "Failed to fetch workflow details from n8n");
       }
 
       const data = await response.json();
+      
+      if (!data.data) {
+        throw new Error("No workflow data returned from n8n");
+      }
+
       setWorkflowDetails(data.data);
       setChatMessages([]);
       setMarkdown("");
@@ -71,7 +77,7 @@ export function DocumentationBuilder({
       console.error("Error loading workflow details:", error);
       toast({
         title: "Failed to Load Workflow",
-        description: "Could not fetch workflow details from n8n. Please check your connection.",
+        description: error instanceof Error ? error.message : "Could not fetch workflow details from n8n. Please check your connection.",
         variant: "destructive",
       });
       setWorkflowDetails(null);
