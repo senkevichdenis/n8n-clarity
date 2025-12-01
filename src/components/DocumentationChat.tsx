@@ -5,8 +5,9 @@ import { Send, Loader2 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { getApiKey } from "@/lib/storage";
-import { editDocumentation } from "@/lib/openrouter";
+import { callWebhook } from "@/lib/webhook";
 import type { ChatMessage } from "@/types";
+import type { DocumentationType } from "@/lib/openrouter";
 
 interface DocumentationChatProps {
   messages: ChatMessage[];
@@ -15,6 +16,9 @@ interface DocumentationChatProps {
   onMarkdownChange: (markdown: string) => void;
   disabled: boolean;
   selectedModel: string;
+  workflowId: string;
+  workflowName: string;
+  docType: DocumentationType;
 }
 
 export function DocumentationChat({
@@ -24,6 +28,9 @@ export function DocumentationChat({
   onMarkdownChange,
   disabled,
   selectedModel,
+  workflowId,
+  workflowName,
+  docType,
 }: DocumentationChatProps) {
   const { toast } = useToast();
   const [input, setInput] = useState("");
@@ -57,25 +64,40 @@ export function DocumentationChat({
     setIsLoading(true);
 
     try {
-      const updatedMarkdown = await editDocumentation(
-        apiKey,
-        selectedModel,
-        markdown,
-        input
-      );
-
-      // Validate that we got markdown back
-      if (!updatedMarkdown || updatedMarkdown.trim() === "") {
-        throw new Error("Received empty response from LLM");
-      }
-
-      onMarkdownChange(updatedMarkdown);
-      
-      const assistantMessage: ChatMessage = {
-        role: "assistant",
-        content: "Documentation updated successfully.",
+      const docTypeMap: Record<DocumentationType, string> = {
+        "Basic Tech Doc": "basic_tech_doc",
+        "Extended Tech Doc": "extended_tech_doc",
+        "Ops Runbook": "ops_runbook",
+        "QA Checklist": "qa_checklist",
       };
-      onMessagesChange([...messages, userMessage, assistantMessage]);
+
+      const result = await callWebhook({
+        action: "edit_documentation",
+        sourceTab: "docs",
+        workflowId: workflowId,
+        workflowName: workflowName,
+        llmModel: selectedModel,
+        openRouterApiKey: apiKey,
+        panelContext: {
+          docType: docTypeMap[docType],
+          currentDoc: markdown,
+        },
+        chat: {
+          input: input,
+          history: messages,
+        },
+      });
+
+      if (result.success) {
+        onMarkdownChange(result.updatedDocMarkdown);
+        const assistantMessage: ChatMessage = {
+          role: "assistant",
+          content: result.reply || "Documentation updated successfully.",
+        };
+        onMessagesChange([...messages, userMessage, assistantMessage]);
+      } else {
+        throw new Error(result.error || "Failed to edit documentation");
+      }
     } catch (error) {
       console.error("Documentation edit error:", error);
       toast({
@@ -125,6 +147,16 @@ export function DocumentationChat({
                 </div>
               </div>
             ))}
+            {isLoading && (
+              <div className="p-4 rounded bg-[hsl(var(--chat-assistant-bg))] text-[hsl(var(--text-main))]">
+                <div className="text-xs mb-2 opacity-70">Assistant</div>
+                <div className="flex gap-1">
+                  <div className="w-2 h-2 bg-[hsl(var(--text-muted))] rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                  <div className="w-2 h-2 bg-[hsl(var(--text-muted))] rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                  <div className="w-2 h-2 bg-[hsl(var(--text-muted))] rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                </div>
+              </div>
+            )}
           </div>
         )}
       </ScrollArea>
