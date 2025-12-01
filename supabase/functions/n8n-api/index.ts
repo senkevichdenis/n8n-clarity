@@ -23,8 +23,8 @@ serve(async (req) => {
       );
     }
 
-    const url = `${n8nBaseUrl}${endpoint}`;
-    console.log(`Making ${method} request to n8n:`, url);
+    const url = `${n8nBaseUrl.replace(/\/+$/, "")}/${endpoint.replace(/^\/+/, "")}`;
+    console.log("[n8n-api] request", { endpoint, method, url });
 
     const n8nResponse = await fetch(url, {
       method,
@@ -34,13 +34,25 @@ serve(async (req) => {
       },
     });
 
+    const text = await n8nResponse.text();
+    
+    console.log("[n8n-api] n8n response", {
+      endpoint,
+      status: n8nResponse.status,
+      ok: n8nResponse.ok,
+      preview: text.slice(0, 500)
+    });
+
     if (!n8nResponse.ok) {
-      const errorText = await n8nResponse.text();
-      console.error("n8n API error:", n8nResponse.status, errorText);
+      console.error("[n8n-api] n8n error response", {
+        endpoint,
+        status: n8nResponse.status,
+        errorText: text
+      });
       return new Response(
         JSON.stringify({ 
           error: `n8n API error: ${n8nResponse.status}`,
-          details: errorText
+          details: text
         }),
         {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -49,7 +61,7 @@ serve(async (req) => {
       );
     }
 
-    const data = await n8nResponse.json();
+    const data = JSON.parse(text);
 
     // Filter workflows by tag if this is a workflows list request
     if (endpoint === "/api/v1/workflows") {
@@ -72,8 +84,12 @@ serve(async (req) => {
 
     // For single workflow endpoint, normalize response
     if (endpoint.startsWith("/api/v1/workflows/")) {
+      console.log("[n8n-api] normalizing single workflow response", {
+        hasData: !!data.data,
+        fallbackToRoot: !data.data && !!data.id
+      });
       return new Response(
-        JSON.stringify({ data: data.data }),
+        JSON.stringify({ data: data.data || data }),
         {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
           status: 200,
@@ -90,7 +106,11 @@ serve(async (req) => {
       }
     );
   } catch (error) {
-    console.error("Error in n8n-api function:", error);
+    console.error("[n8n-api] error", {
+      endpoint: await req.json().then(j => j.endpoint).catch(() => "unknown"),
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined
+    });
     return new Response(
       JSON.stringify({
         error: error instanceof Error ? error.message : "Unknown error occurred",

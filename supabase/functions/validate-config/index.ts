@@ -32,7 +32,7 @@ serve(async (req) => {
           body: JSON.stringify({
             model: model,
             messages: [{ role: "user", content: "Connection test" }],
-            max_tokens: 5,
+            max_tokens: 1000,
           }),
         });
 
@@ -40,6 +40,7 @@ serve(async (req) => {
         
         console.log("[Validate] OpenRouter response", {
           status: openRouterResponse.status,
+          ok: openRouterResponse.ok,
           bodyPreview: JSON.stringify(responseData).slice(0, 300)
         });
 
