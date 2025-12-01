@@ -3,9 +3,16 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { saveApiKey, getApiKey, maskApiKey, saveN8nBaseUrl, getN8nBaseUrl, saveN8nApiKey, getN8nApiKey } from "@/lib/storage";
+import { 
+  saveApiKey, getApiKey, maskApiKey, 
+  saveN8nBaseUrl, getN8nBaseUrl, 
+  saveN8nApiKey, getN8nApiKey,
+  saveModel, getModel,
+  saveOpenRouterValid, getOpenRouterValid,
+  saveN8nValid, getN8nValid
+} from "@/lib/storage";
 import { Separator } from "@/components/ui/separator";
-import { CheckCircle2, XCircle, Loader2 } from "lucide-react";
+import { CheckCircle2, XCircle, Loader2, Edit2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface SettingsModalProps {
@@ -13,136 +20,210 @@ interface SettingsModalProps {
   onOpenChange: (open: boolean) => void;
   onSave: () => void;
   selectedModel: string;
+  onModelChange: (model: string) => void;
 }
 
-export function SettingsModal({ open, onOpenChange, onSave, selectedModel }: SettingsModalProps) {
+export function SettingsModal({ open, onOpenChange, onSave, selectedModel, onModelChange }: SettingsModalProps) {
   const { toast } = useToast();
+  
+  // OpenRouter state
   const [apiKey, setApiKey] = useState("");
-  const [isEditing, setIsEditing] = useState(false);
+  const [originalApiKey, setOriginalApiKey] = useState("");
+  const [isEditingOpenRouter, setIsEditingOpenRouter] = useState(false);
+  const [openRouterValid, setOpenRouterValid] = useState(false);
+  
+  // n8n state
   const [n8nBaseUrl, setN8nBaseUrl] = useState("");
+  const [originalN8nBaseUrl, setOriginalN8nBaseUrl] = useState("");
   const [n8nApiKey, setN8nApiKey] = useState("");
-  const [isEditingN8nUrl, setIsEditingN8nUrl] = useState(false);
-  const [isEditingN8nKey, setIsEditingN8nKey] = useState(false);
+  const [originalN8nApiKey, setOriginalN8nApiKey] = useState("");
+  const [isEditingN8n, setIsEditingN8n] = useState(false);
+  const [n8nValid, setN8nValid] = useState(false);
+  
   const [isValidating, setIsValidating] = useState(false);
-  const [validationStatus, setValidationStatus] = useState<{
-    openRouter: { valid: boolean; error: string } | null;
-    n8n: { valid: boolean; error: string } | null;
-  }>({ openRouter: null, n8n: null });
+  const [validationErrors, setValidationErrors] = useState<{ openRouter?: string; n8n?: string }>({});
 
   useEffect(() => {
     if (open) {
-      const existingKey = getApiKey();
-      if (existingKey) {
-        setApiKey(maskApiKey(existingKey));
-        setIsEditing(false);
+      // Load OpenRouter config
+      const storedKey = getApiKey();
+      const storedModel = getModel();
+      const storedOpenRouterValid = getOpenRouterValid();
+      
+      if (storedKey) {
+        setOriginalApiKey(storedKey);
+        setApiKey(maskApiKey(storedKey));
+        setOpenRouterValid(storedOpenRouterValid);
+        setIsEditingOpenRouter(false);
       } else {
+        setOriginalApiKey("");
         setApiKey("");
-        setIsEditing(true);
+        setOpenRouterValid(false);
+        setIsEditingOpenRouter(true);
       }
-
-      const existingN8nUrl = getN8nBaseUrl();
-      if (existingN8nUrl) {
-        setN8nBaseUrl(maskApiKey(existingN8nUrl));
-        setIsEditingN8nUrl(false);
+      
+      if (storedModel) {
+        onModelChange(storedModel);
+      }
+      
+      // Load n8n config
+      const storedN8nUrl = getN8nBaseUrl();
+      const storedN8nKey = getN8nApiKey();
+      const storedN8nValid = getN8nValid();
+      
+      if (storedN8nUrl && storedN8nKey) {
+        setOriginalN8nBaseUrl(storedN8nUrl);
+        setOriginalN8nApiKey(storedN8nKey);
+        setN8nBaseUrl(maskApiKey(storedN8nUrl));
+        setN8nApiKey(maskApiKey(storedN8nKey));
+        setN8nValid(storedN8nValid);
+        setIsEditingN8n(false);
       } else {
+        setOriginalN8nBaseUrl("");
+        setOriginalN8nApiKey("");
         setN8nBaseUrl("");
-        setIsEditingN8nUrl(true);
-      }
-
-      const existingN8nKey = getN8nApiKey();
-      if (existingN8nKey) {
-        setN8nApiKey(maskApiKey(existingN8nKey));
-        setIsEditingN8nKey(false);
-      } else {
         setN8nApiKey("");
-        setIsEditingN8nKey(true);
+        setN8nValid(false);
+        setIsEditingN8n(true);
       }
+      
+      setValidationErrors({});
     }
   }, [open]);
 
+  const handleEditOpenRouter = () => {
+    setIsEditingOpenRouter(true);
+    setApiKey(originalApiKey);
+  };
+
+  const handleEditN8n = () => {
+    setIsEditingN8n(true);
+    setN8nBaseUrl(originalN8nBaseUrl);
+    setN8nApiKey(originalN8nApiKey);
+  };
+
   const handleSave = async () => {
     setIsValidating(true);
-    setValidationStatus({ openRouter: null, n8n: null });
+    setValidationErrors({});
 
-    const openRouterKeyToValidate = (isEditing && apiKey && !apiKey.includes("•")) ? apiKey : null;
-    const n8nUrlToValidate = (isEditingN8nUrl && n8nBaseUrl && !n8nBaseUrl.includes("•")) ? n8nBaseUrl : null;
-    const n8nKeyToValidate = (isEditingN8nKey && n8nApiKey && !n8nApiKey.includes("•")) ? n8nApiKey : null;
-
-    console.log("[Settings] Starting validation", {
-      hasOpenRouterKey: !!openRouterKeyToValidate,
-      hasN8nUrl: !!n8nUrlToValidate,
-      hasN8nKey: !!n8nKeyToValidate,
-      selectedModel
-    });
+    const errors: { openRouter?: string; n8n?: string } = {};
+    let openRouterSuccess = !isEditingOpenRouter;
+    let n8nSuccess = !isEditingN8n;
 
     try {
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/validate-config`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          },
-          body: JSON.stringify({
-            openRouterKey: openRouterKeyToValidate,
-            n8nBaseUrl: n8nUrlToValidate,
-            n8nApiKey: n8nKeyToValidate,
-            model: selectedModel,
-          }),
-        }
-      );
+      // Validate OpenRouter if edited
+      if (isEditingOpenRouter && apiKey && !apiKey.includes("•")) {
+        console.log("[Settings] Validating OpenRouter key");
+        try {
+          const response = await fetch(
+            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/validate-config`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+              },
+              body: JSON.stringify({
+                openRouterKey: apiKey,
+                model: selectedModel,
+              }),
+            }
+          );
 
-      if (!response.ok) {
-        throw new Error("Validation request failed");
+          const result = await response.json();
+          
+          if (result.openRouter?.valid) {
+            saveApiKey(apiKey);
+            saveModel(selectedModel);
+            saveOpenRouterValid(true);
+            setOriginalApiKey(apiKey);
+            setOpenRouterValid(true);
+            setIsEditingOpenRouter(false);
+            openRouterSuccess = true;
+            console.log("[Settings] OpenRouter validation successful");
+          } else {
+            errors.openRouter = result.openRouter?.error || "Validation failed";
+            console.error("[Settings] OpenRouter validation failed:", errors.openRouter);
+          }
+        } catch (error) {
+          errors.openRouter = "Network error during validation";
+          console.error("[Settings] OpenRouter validation error:", error);
+        }
       }
 
-      const results = await response.json();
-      
-      console.log("[Settings] Validation results", {
-        openRouterValid: results.openRouter?.valid,
-        openRouterError: results.openRouter?.error,
-        n8nValid: results.n8n?.valid,
-        n8nError: results.n8n?.error
-      });
-      
-      setValidationStatus(results);
+      // Validate n8n if edited
+      if (isEditingN8n && n8nBaseUrl && n8nApiKey && !n8nBaseUrl.includes("•") && !n8nApiKey.includes("•")) {
+        console.log("[Settings] Validating n8n credentials");
+        try {
+          const response = await fetch(
+            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/validate-config`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+              },
+              body: JSON.stringify({
+                n8nBaseUrl: n8nBaseUrl,
+                n8nApiKey: n8nApiKey,
+              }),
+            }
+          );
 
-      const openRouterValid = !openRouterKeyToValidate || results.openRouter?.valid;
-      const n8nValid = (!n8nUrlToValidate && !n8nKeyToValidate) || (results.n8n?.valid);
+          const result = await response.json();
+          
+          if (result.n8n?.valid) {
+            saveN8nBaseUrl(n8nBaseUrl);
+            saveN8nApiKey(n8nApiKey);
+            saveN8nValid(true);
+            setOriginalN8nBaseUrl(n8nBaseUrl);
+            setOriginalN8nApiKey(n8nApiKey);
+            setN8nValid(true);
+            setIsEditingN8n(false);
+            n8nSuccess = true;
+            console.log("[Settings] n8n validation successful");
+          } else {
+            errors.n8n = result.n8n?.error || "Validation failed";
+            console.error("[Settings] n8n validation failed:", errors.n8n);
+          }
+        } catch (error) {
+          errors.n8n = "Network error during validation";
+          console.error("[Settings] n8n validation error:", error);
+        }
+      }
 
-      if (openRouterValid && n8nValid) {
-        if (openRouterKeyToValidate) saveApiKey(openRouterKeyToValidate);
-        if (n8nUrlToValidate) saveN8nBaseUrl(n8nUrlToValidate);
-        if (n8nKeyToValidate) saveN8nApiKey(n8nKeyToValidate);
+      setValidationErrors(errors);
 
-        console.log("[Settings] All validations passed, settings saved");
-
+      if (openRouterSuccess && n8nSuccess) {
         toast({
           title: "Settings Saved",
           description: "All configurations validated and saved successfully.",
         });
-
         onSave();
         onOpenChange(false);
       } else {
-        const errors = [];
-        if (!openRouterValid) errors.push(`OpenRouter: ${results.openRouter?.error}`);
-        if (!n8nValid) errors.push(`n8n: ${results.n8n?.error}`);
-        
-        console.error("[Settings] Validation failed:", errors);
+        // Revert failed validations
+        if (!openRouterSuccess && originalApiKey) {
+          setApiKey(maskApiKey(originalApiKey));
+          setIsEditingOpenRouter(false);
+        }
+        if (!n8nSuccess && originalN8nBaseUrl && originalN8nApiKey) {
+          setN8nBaseUrl(maskApiKey(originalN8nBaseUrl));
+          setN8nApiKey(maskApiKey(originalN8nApiKey));
+          setIsEditingN8n(false);
+        }
         
         toast({
           title: "Validation Failed",
-          description: errors.join("; "),
+          description: Object.values(errors).join("; "),
           variant: "destructive",
         });
       }
     } catch (error) {
-      console.error("[Settings] Validation error:", error);
+      console.error("[Settings] Unexpected validation error:", error);
       toast({
         title: "Validation Error",
-        description: error instanceof Error ? error.message : "Could not validate configuration.",
+        description: "An unexpected error occurred during validation.",
         variant: "destructive",
       });
     } finally {
@@ -150,26 +231,7 @@ export function SettingsModal({ open, onOpenChange, onSave, selectedModel }: Set
     }
   };
 
-  const handleInputFocus = () => {
-    if (!isEditing) {
-      setApiKey("");
-      setIsEditing(true);
-    }
-  };
-
-  const handleN8nUrlFocus = () => {
-    if (!isEditingN8nUrl) {
-      setN8nBaseUrl("");
-      setIsEditingN8nUrl(true);
-    }
-  };
-
-  const handleN8nKeyFocus = () => {
-    if (!isEditingN8nKey) {
-      setN8nApiKey("");
-      setIsEditingN8nKey(true);
-    }
-  };
+  const hasChanges = isEditingOpenRouter || isEditingN8n;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -177,82 +239,113 @@ export function SettingsModal({ open, onOpenChange, onSave, selectedModel }: Set
         <DialogHeader>
           <DialogTitle className="text-[hsl(var(--text-main))]">API Settings</DialogTitle>
           <DialogDescription className="text-[hsl(var(--text-muted))]">
-            Configure your API keys and connection settings. All keys are stored securely in your browser's local storage.
+            Configure your API keys and connection settings. Valid configurations are stored securely and persist across sessions.
           </DialogDescription>
         </DialogHeader>
+        
         <div className="space-y-6 py-4">
+          {/* OpenRouter Configuration */}
           <div className="space-y-4">
-            <h3 className="text-sm font-medium text-[hsl(var(--text-main))]">OpenRouter Configuration</h3>
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-medium text-[hsl(var(--text-main))]">OpenRouter Configuration</h3>
+              {openRouterValid && !isEditingOpenRouter && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleEditOpenRouter}
+                  className="h-8 gap-2"
+                >
+                  <Edit2 className="h-3 w-3" />
+                  Edit
+                </Button>
+              )}
+            </div>
+            
             <div className="space-y-2">
               <Label htmlFor="apiKey" className="text-[hsl(var(--text-secondary))] flex items-center gap-2">
                 OpenRouter API Key
-                {validationStatus.openRouter !== null && (
-                  validationStatus.openRouter.valid ? (
-                    <CheckCircle2 className="h-4 w-4 text-green-500" />
-                  ) : (
-                    <XCircle className="h-4 w-4 text-red-500" />
-                  )
+                {openRouterValid && !isEditingOpenRouter && (
+                  <CheckCircle2 className="h-4 w-4 text-green-500" />
+                )}
+                {validationErrors.openRouter && (
+                  <XCircle className="h-4 w-4 text-red-500" />
                 )}
               </Label>
               <Input
                 id="apiKey"
-                type="password"
+                type={isEditingOpenRouter ? "text" : "password"}
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
-                onFocus={handleInputFocus}
                 placeholder="sk-or-..."
-                className="bg-[hsl(var(--bg-input))] border-[hsl(var(--border-subtle))] text-[hsl(var(--text-main))]"
+                disabled={!isEditingOpenRouter}
+                className="bg-[hsl(var(--bg-input))] border-[hsl(var(--border-subtle))] text-[hsl(var(--text-main))] disabled:opacity-70"
               />
-              {validationStatus.openRouter && !validationStatus.openRouter.valid && (
-                <p className="text-xs text-red-500">{validationStatus.openRouter.error}</p>
+              {validationErrors.openRouter && (
+                <p className="text-xs text-red-500">{validationErrors.openRouter}</p>
               )}
             </div>
           </div>
 
           <Separator className="bg-[hsl(var(--border-subtle))]" />
 
+          {/* n8n Configuration */}
           <div className="space-y-4">
-            <h3 className="text-sm font-medium text-[hsl(var(--text-main))]">n8n Configuration</h3>
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-medium text-[hsl(var(--text-main))]">n8n Configuration</h3>
+              {n8nValid && !isEditingN8n && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleEditN8n}
+                  className="h-8 gap-2"
+                >
+                  <Edit2 className="h-3 w-3" />
+                  Edit
+                </Button>
+              )}
+            </div>
+            
             <div className="space-y-2">
               <Label htmlFor="n8nBaseUrl" className="text-[hsl(var(--text-secondary))] flex items-center gap-2">
                 N8N Base URL
-                {validationStatus.n8n !== null && (
-                  validationStatus.n8n.valid ? (
-                    <CheckCircle2 className="h-4 w-4 text-green-500" />
-                  ) : (
-                    <XCircle className="h-4 w-4 text-red-500" />
-                  )
+                {n8nValid && !isEditingN8n && (
+                  <CheckCircle2 className="h-4 w-4 text-green-500" />
+                )}
+                {validationErrors.n8n && (
+                  <XCircle className="h-4 w-4 text-red-500" />
                 )}
               </Label>
               <Input
                 id="n8nBaseUrl"
-                type="password"
+                type={isEditingN8n ? "text" : "password"}
                 value={n8nBaseUrl}
                 onChange={(e) => setN8nBaseUrl(e.target.value)}
-                onFocus={handleN8nUrlFocus}
                 placeholder="https://n8n.example.com"
-                className="bg-[hsl(var(--bg-input))] border-[hsl(var(--border-subtle))] text-[hsl(var(--text-main))]"
+                disabled={!isEditingN8n}
+                className="bg-[hsl(var(--bg-input))] border-[hsl(var(--border-subtle))] text-[hsl(var(--text-main))] disabled:opacity-70"
               />
             </div>
+            
             <div className="space-y-2">
               <Label htmlFor="n8nApiKey" className="text-[hsl(var(--text-secondary))]">
                 N8N API Key
               </Label>
               <Input
                 id="n8nApiKey"
-                type="password"
+                type={isEditingN8n ? "text" : "password"}
                 value={n8nApiKey}
                 onChange={(e) => setN8nApiKey(e.target.value)}
-                onFocus={handleN8nKeyFocus}
                 placeholder="n8n_api_..."
-                className="bg-[hsl(var(--bg-input))] border-[hsl(var(--border-subtle))] text-[hsl(var(--text-main))]"
+                disabled={!isEditingN8n}
+                className="bg-[hsl(var(--bg-input))] border-[hsl(var(--border-subtle))] text-[hsl(var(--text-main))] disabled:opacity-70"
               />
-              {validationStatus.n8n && !validationStatus.n8n.valid && (
-                <p className="text-xs text-red-500">{validationStatus.n8n.error}</p>
+              {validationErrors.n8n && (
+                <p className="text-xs text-red-500">{validationErrors.n8n}</p>
               )}
             </div>
           </div>
         </div>
+        
         <DialogFooter>
           <Button
             variant="outline"
@@ -263,12 +356,7 @@ export function SettingsModal({ open, onOpenChange, onSave, selectedModel }: Set
           </Button>
           <Button
             onClick={handleSave}
-            disabled={
-              isValidating ||
-              ((!isEditing || !apiKey || apiKey.includes("•")) &&
-              (!isEditingN8nUrl || !n8nBaseUrl || n8nBaseUrl.includes("•")) &&
-              (!isEditingN8nKey || !n8nApiKey || n8nApiKey.includes("•")))
-            }
+            disabled={isValidating || !hasChanges}
             className="bg-primary text-primary-foreground hover:bg-primary/90"
           >
             {isValidating ? (

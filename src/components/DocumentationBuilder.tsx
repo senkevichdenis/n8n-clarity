@@ -4,8 +4,9 @@ import { DocumentationEditor } from "./DocumentationEditor";
 import { DocumentationChat } from "./DocumentationChat";
 import { useToast } from "@/hooks/use-toast";
 import { getApiKey, getN8nBaseUrl, getN8nApiKey } from "@/lib/storage";
-import { generateDocumentation, type DocumentationType } from "@/lib/openrouter";
+import { callWebhook } from "@/lib/webhook";
 import type { Workflow, WorkflowDetails, ChatMessage } from "@/types";
+import type { DocumentationType } from "@/lib/openrouter";
 
 interface DocumentationBuilderProps {
   workflows: Workflow[];
@@ -22,6 +23,7 @@ export function DocumentationBuilder({
 }: DocumentationBuilderProps) {
   const { toast } = useToast();
   const [selectedWorkflowId, setSelectedWorkflowId] = useState<string | null>(null);
+  const [selectedWorkflowName, setSelectedWorkflowName] = useState<string>("");
   const [workflowDetails, setWorkflowDetails] = useState<WorkflowDetails | null>(null);
   const [docType, setDocType] = useState<DocumentationType>("Basic Tech Doc");
   const [markdown, setMarkdown] = useState("");
@@ -35,6 +37,7 @@ export function DocumentationBuilder({
       name: workflow?.name
     });
     setSelectedWorkflowId(workflowId);
+    setSelectedWorkflowName(workflow?.name || "");
     setChatMessages([]);
     setMarkdown("");
   };
@@ -84,86 +87,39 @@ export function DocumentationBuilder({
 
     setIsGenerating(true);
     try {
-      // Fetch workflow details
-      const endpoint = `/api/v1/workflows/${selectedWorkflowId}`;
-      
-      console.log("[Docs] request to n8n-api", {
-        endpoint,
-        docType,
-        hasBaseUrl: !!n8nBaseUrl,
-        hasApiKey: !!n8nApiKey
+      const docTypeMap: Record<DocumentationType, string> = {
+        "Basic Tech Doc": "basic_tech_doc",
+        "Extended Tech Doc": "extended_tech_doc",
+        "Ops Runbook": "ops_runbook",
+        "QA Checklist": "qa_checklist",
+      };
+
+      const result = await callWebhook({
+        action: "generate_documentation",
+        sourceTab: "docs",
+        workflowId: selectedWorkflowId,
+        workflowName: selectedWorkflowName,
+        llmModel: selectedModel,
+        openRouterApiKey: apiKey,
+        panelContext: {
+          docType: docTypeMap[docType],
+          existingDoc: markdown || null,
+        },
+        chat: {
+          input: null,
+          history: [],
+        },
       });
 
-      const detailsResponse = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/n8n-api`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          },
-          body: JSON.stringify({
-            n8nBaseUrl,
-            n8nApiKey,
-            endpoint,
-          }),
-        }
-      );
-
-      const detailsData = await detailsResponse.json();
-
-      console.log("[Docs] n8n-api response", {
-        status: detailsResponse.status,
-        hasData: !!detailsData?.data,
-        preview: JSON.stringify(detailsData).slice(0, 300)
-      });
-
-      if (!detailsResponse.ok || !detailsData.data) {
-        console.error("[Docs] workflow load failure", detailsData);
-        throw new Error("Failed to fetch workflow data from n8n");
+      if (result.success) {
+        setMarkdown(result.docMarkdown);
+        toast({
+          title: "Documentation Generated",
+          description: "The workflow documentation has been completed successfully.",
+        });
+      } else {
+        throw new Error(result.error || "Failed to generate documentation");
       }
-
-      const currentWorkflowDetails = detailsData.data;
-
-      // Fetch executions if needed
-      let executionsData;
-      if (docType === "Ops Runbook" || docType === "Extended Tech Doc" || docType === "QA Checklist") {
-        const executionsResponse = await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/n8n-api`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-            },
-            body: JSON.stringify({
-              n8nBaseUrl,
-              n8nApiKey,
-              endpoint: `/api/v1/executions?workflowId=${selectedWorkflowId}&limit=50`,
-            }),
-          }
-        );
-
-        if (executionsResponse.ok) {
-          const execData = await executionsResponse.json();
-          executionsData = execData.data;
-        }
-      }
-
-      const result = await generateDocumentation(
-        apiKey,
-        selectedModel,
-        docType,
-        currentWorkflowDetails,
-        executionsData
-      );
-
-      setMarkdown(result);
-      setWorkflowDetails(currentWorkflowDetails);
-      toast({
-        title: "Documentation Generated",
-        description: "The workflow documentation has been completed successfully.",
-      });
     } catch (error) {
       console.error("[Docs] Generation error:", error);
       toast({
@@ -214,6 +170,9 @@ export function DocumentationBuilder({
             onMarkdownChange={setMarkdown}
             disabled={!selectedWorkflowId || !getApiKey()}
             selectedModel={selectedModel}
+            workflowId={selectedWorkflowId || ""}
+            workflowName={selectedWorkflowName}
+            docType={docType}
           />
         </div>
       </div>

@@ -72,6 +72,16 @@ export function ChatPanel({ messages, onSendMessage, isLoading, disabled }: Chat
                 </div>
               </div>
             ))}
+            {isLoading && (
+              <div className="p-4 rounded bg-[hsl(var(--chat-assistant-bg))] text-[hsl(var(--text-main))]">
+                <div className="text-xs mb-2 opacity-70">Assistant</div>
+                <div className="flex gap-1">
+                  <div className="w-2 h-2 bg-[hsl(var(--text-muted))] rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                  <div className="w-2 h-2 bg-[hsl(var(--text-muted))] rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                  <div className="w-2 h-2 bg-[hsl(var(--text-muted))] rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                </div>
+              </div>
+            )}
             <div ref={messagesEndRef} />
           </div>
         )}

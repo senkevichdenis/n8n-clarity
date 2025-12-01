@@ -7,19 +7,21 @@ import { SummaryPanel } from "@/components/SummaryPanel";
 import { ChatPanel } from "@/components/ChatPanel";
 import { DocumentationBuilder } from "@/components/DocumentationBuilder";
 import { useToast } from "@/hooks/use-toast";
-import { getApiKey, getN8nBaseUrl, getN8nApiKey } from "@/lib/storage";
-import { generateAnalysis, sendChatMessage } from "@/lib/openrouter";
+import { getApiKey, getN8nBaseUrl, getN8nApiKey, getModel, saveModel } from "@/lib/storage";
+import { callWebhook } from "@/lib/webhook";
 import type { Workflow, WorkflowDetails, Audience, Mode, ChatMessage, ExecutionsSummary } from "@/types";
 import { LLM_MODELS } from "@/types";
+import { TypingIndicator } from "@/components/TypingAnimation";
 
 const Index = () => {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<"explain" | "documentation">("explain");
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [selectedModel, setSelectedModel] = useState(LLM_MODELS[0].id);
+  const [selectedModel, setSelectedModel] = useState(getModel() || LLM_MODELS[0].id);
   const [workflows, setWorkflows] = useState<Workflow[]>([]);
   const [loadingWorkflows, setLoadingWorkflows] = useState(false);
   const [selectedWorkflowId, setSelectedWorkflowId] = useState<string | null>(null);
+  const [selectedWorkflowName, setSelectedWorkflowName] = useState<string>("");
   const [workflowDetails, setWorkflowDetails] = useState<WorkflowDetails | null>(null);
   const [audience, setAudience] = useState<Audience>("Engineer");
   const [mode, setMode] = useState<Mode>("Explanation");
@@ -27,6 +29,7 @@ const Index = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [isChatLoading, setIsChatLoading] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
 
   // Check for API key on mount
   useEffect(() => {
@@ -177,7 +180,13 @@ const Index = () => {
       name: workflow?.name
     });
     setSelectedWorkflowId(workflowId);
+    setSelectedWorkflowName(workflow?.name || "");
     loadWorkflowDetails(workflowId);
+  };
+
+  const handleModelChange = (model: string) => {
+    setSelectedModel(model);
+    saveModel(model);
   };
 
   const handleGenerate = async () => {
@@ -226,87 +235,40 @@ const Index = () => {
     }
 
     setIsGenerating(true);
+    setIsTyping(true);
+    
     try {
-      // Refresh workflow details from n8n before generating
-      const endpoint = `/api/v1/workflows/${selectedWorkflowId}`;
-      
-      console.log("[Explain] request to n8n-api", {
-        endpoint,
-        hasBaseUrl: !!n8nBaseUrl,
-        hasApiKey: !!n8nApiKey,
-        model: selectedModel,
+      const result = await callWebhook({
+        action: "explain_workflow",
+        sourceTab: "explain",
+        workflowId: selectedWorkflowId,
+        workflowName: selectedWorkflowName,
+        llmModel: selectedModel,
+        openRouterApiKey: apiKey,
+        panelContext: {
+          audience: audience.toLowerCase(),
+          mode: mode.toLowerCase().replace(/ /g, "_"),
+          existingExplanation: summaryContent || null,
+        },
+        chat: {
+          input: null,
+          history: chatMessages,
+        },
       });
 
-      const detailsResponse = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/n8n-api`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          },
-          body: JSON.stringify({
-            n8nBaseUrl,
-            n8nApiKey,
-            endpoint,
-          }),
+      if (result.success) {
+        setSummaryContent(result.explanation);
+        if (result.chatMessage) {
+          const assistantMessage: ChatMessage = { role: "assistant", content: result.chatMessage };
+          setChatMessages((prev) => [...prev, assistantMessage]);
         }
-      );
-
-      const detailsData = await detailsResponse.json();
-
-      console.log("[Explain] n8n-api response", {
-        status: detailsResponse.status,
-        hasData: !!detailsData?.data,
-        preview: JSON.stringify(detailsData).slice(0, 300),
-      });
-
-      if (!detailsResponse.ok || !detailsData.data) {
-        console.error("[Explain] workflow load failure", detailsData);
-        throw new Error("Failed to fetch current workflow data from n8n");
+        toast({
+          title: "Analysis Generated",
+          description: "The workflow analysis has been completed successfully.",
+        });
+      } else {
+        throw new Error(result.error || "Failed to generate analysis");
       }
-
-      const currentWorkflowDetails = detailsData.data;
-
-      let executionsSummary: ExecutionsSummary | undefined;
-
-      if (mode === "Executions Summary") {
-        const executionsResponse = await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/n8n-api`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-            },
-            body: JSON.stringify({
-              n8nBaseUrl,
-              n8nApiKey,
-              endpoint: `/api/v1/executions?workflowId=${selectedWorkflowId}&limit=50`,
-            }),
-          }
-        );
-
-        if (executionsResponse.ok) {
-          const executionsData = await executionsResponse.json();
-          executionsSummary = executionsData.data;
-        }
-      }
-
-      const result = await generateAnalysis(
-        apiKey,
-        selectedModel,
-        audience,
-        mode,
-        currentWorkflowDetails,
-        executionsSummary
-      );
-
-      setSummaryContent(result);
-      toast({
-        title: "Analysis Generated",
-        description: "The workflow analysis has been completed successfully.",
-      });
     } catch (error) {
       console.error("[Explain] Generation error:", error);
       toast({
@@ -314,33 +276,49 @@ const Index = () => {
         description:
           error instanceof Error
             ? error.message
-            : "Could not get workflow data from n8n. Please check your connection.",
+            : "Could not generate analysis. Please try again.",
         variant: "destructive",
       });
     } finally {
       setIsGenerating(false);
+      setIsTyping(false);
     }
   };
 
   const handleSendChatMessage = async (message: string) => {
     const apiKey = getApiKey();
-    if (!apiKey || !workflowDetails) return;
+    if (!apiKey || !selectedWorkflowId) return;
 
     const userMessage: ChatMessage = { role: "user", content: message };
     setChatMessages((prev) => [...prev, userMessage]);
     setIsChatLoading(true);
+    setIsTyping(true);
 
     try {
-      const response = await sendChatMessage(
-        apiKey,
-        selectedModel,
-        audience,
-        [...chatMessages, userMessage],
-        workflowDetails
-      );
+      const result = await callWebhook({
+        action: "explain_chat",
+        sourceTab: "explain",
+        workflowId: selectedWorkflowId,
+        workflowName: selectedWorkflowName,
+        llmModel: selectedModel,
+        openRouterApiKey: apiKey,
+        panelContext: {
+          currentExplanation: summaryContent || null,
+          currentWeakPoints: null,
+          currentExecutionsSummary: null,
+        },
+        chat: {
+          input: message,
+          history: chatMessages,
+        },
+      });
 
-      const assistantMessage: ChatMessage = { role: "assistant", content: response };
-      setChatMessages((prev) => [...prev, assistantMessage]);
+      if (result.success) {
+        const assistantMessage: ChatMessage = { role: "assistant", content: result.reply };
+        setChatMessages((prev) => [...prev, assistantMessage]);
+      } else {
+        throw new Error(result.error || "Failed to get response");
+      }
     } catch (error) {
       console.error("Chat error:", error);
       toast({
@@ -350,6 +328,7 @@ const Index = () => {
       });
     } finally {
       setIsChatLoading(false);
+      setIsTyping(false);
     }
   };
 
@@ -360,7 +339,7 @@ const Index = () => {
       <div className="max-w-[1800px] mx-auto">
         <Header
           selectedModel={selectedModel}
-          onModelChange={setSelectedModel}
+          onModelChange={handleModelChange}
           onSettingsClick={() => setSettingsOpen(true)}
         />
 
@@ -415,6 +394,7 @@ const Index = () => {
             loadWorkflows();
           }}
           selectedModel={selectedModel}
+          onModelChange={handleModelChange}
         />
       </div>
     </div>
