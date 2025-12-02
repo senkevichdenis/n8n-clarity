@@ -2,6 +2,7 @@ import { useState } from "react";
 import { WorkflowControls } from "./WorkflowControls";
 import { DocumentationEditor } from "./DocumentationEditor";
 import { DocumentationChat } from "./DocumentationChat";
+import { ErrorDialog } from "./ErrorDialog";
 import { useToast } from "@/hooks/use-toast";
 import { getApiKey, getN8nBaseUrl, getN8nApiKey } from "@/lib/storage";
 import { callWebhook } from "@/lib/webhook";
@@ -29,6 +30,12 @@ export function DocumentationBuilder({
   const [markdown, setMarkdown] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [errorDialog, setErrorDialog] = useState<{
+    open: boolean;
+    title: string;
+    message: string;
+    details?: string;
+  }>({ open: false, title: "", message: "" });
 
   const handleWorkflowChange = (workflowId: string) => {
     const workflow = workflows.find(w => w.id === workflowId);
@@ -120,13 +127,25 @@ export function DocumentationBuilder({
       }
     } catch (error) {
       console.error("[Docs] Generation error:", error);
-      toast({
+
+      // Check if error has details property (from webhook.ts)
+      const errorMessage = error && typeof error === 'object' && 'message' in error
+        ? String(error.message)
+        : error instanceof Error
+        ? error.message
+        : "Could not generate documentation. Please try again.";
+
+      const errorDetails = error && typeof error === 'object' && 'details' in error
+        ? String(error.details)
+        : error instanceof Error && error.stack
+        ? error.stack
+        : undefined;
+
+      setErrorDialog({
+        open: true,
         title: "Generation Failed",
-        description:
-          error instanceof Error
-            ? error.message
-            : "Could not generate documentation. Please try again.",
-        variant: "destructive",
+        message: errorMessage,
+        details: errorDetails,
       });
     } finally {
       setIsGenerating(false);
@@ -174,6 +193,14 @@ export function DocumentationBuilder({
           />
         </div>
       </div>
+
+      <ErrorDialog
+        open={errorDialog.open}
+        onOpenChange={(open) => setErrorDialog({ ...errorDialog, open })}
+        title={errorDialog.title}
+        message={errorDialog.message}
+        details={errorDialog.details}
+      />
     </div>
   );
 }
