@@ -52,7 +52,9 @@ export async function callWebhook(payload: Omit<WebhookPayload, "clientMeta">): 
     throw new Error(`Webhook error: ${response.status} - ${errorText}`);
   }
 
+  // Parse response as JSON: expect [{ output: "..." }]
   const result = await response.json();
+  
   console.log(`[Webhook] Success response:`, {
     action: payload.action,
     hasResult: !!result,
@@ -61,6 +63,7 @@ export async function callWebhook(payload: Omit<WebhookPayload, "clientMeta">): 
   });
 
   // Extract output from canonical n8n response: [{ output: "..." }]
+  // The output field is a string (markdown/text) - do NOT parse it again
   if (Array.isArray(result) && result.length > 0 && result[0].output) {
     return { success: true, output: result[0].output };
   }
