@@ -7,8 +7,10 @@ interface WebhookPayload {
   workflowName: string;
   llmModel: string;
   openRouterApiKey: string | null;
+  n8nBaseUrl: string;
+  n8nApiKey: string;
   panelContext: any;
-  chat: {
+  chat?: {
     input: string | null;
     history: Array<{ role: string; content: string }>;
   };
@@ -54,7 +56,14 @@ export async function callWebhook(payload: Omit<WebhookPayload, "clientMeta">): 
   console.log(`[Webhook] Success response:`, {
     action: payload.action,
     hasResult: !!result,
+    isArray: Array.isArray(result),
+    preview: JSON.stringify(result).slice(0, 300),
   });
+
+  // Extract output from canonical n8n response: [{ output: "..." }]
+  if (Array.isArray(result) && result.length > 0 && result[0].output) {
+    return { success: true, output: result[0].output };
+  }
 
   return result;
 }

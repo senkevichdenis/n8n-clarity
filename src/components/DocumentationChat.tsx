@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Send, Loader2 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
-import { getApiKey } from "@/lib/storage";
+import { getApiKey, getN8nBaseUrl, getN8nApiKey } from "@/lib/storage";
 import { callWebhook } from "@/lib/webhook";
 import type { ChatMessage } from "@/types";
 import type { DocumentationType } from "@/lib/openrouter";
@@ -40,10 +40,22 @@ export function DocumentationChat({
     if (!input.trim() || isLoading || disabled) return;
 
     const apiKey = getApiKey();
+    const n8nBaseUrl = getN8nBaseUrl();
+    const n8nApiKey = getN8nApiKey();
+    
     if (!apiKey) {
       toast({
         title: "API Key Required",
         description: "Please configure your OpenRouter API key in Settings.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!n8nBaseUrl || !n8nApiKey) {
+      toast({
+        title: "n8n Configuration Required",
+        description: "Please configure n8n credentials in Settings.",
         variant: "destructive",
       });
       return;
@@ -78,6 +90,8 @@ export function DocumentationChat({
         workflowName: workflowName,
         llmModel: selectedModel,
         openRouterApiKey: apiKey,
+        n8nBaseUrl: n8nBaseUrl,
+        n8nApiKey: n8nApiKey,
         panelContext: {
           docType: docTypeMap[docType],
           currentDoc: markdown,
@@ -88,11 +102,11 @@ export function DocumentationChat({
         },
       });
 
-      if (result.success) {
-        onMarkdownChange(result.updatedDocMarkdown);
+      if (result.success && result.output) {
+        onMarkdownChange(result.output);
         const assistantMessage: ChatMessage = {
           role: "assistant",
-          content: result.reply || "Documentation updated successfully.",
+          content: "Documentation updated successfully.",
         };
         onMessagesChange([...messages, userMessage, assistantMessage]);
       } else {
