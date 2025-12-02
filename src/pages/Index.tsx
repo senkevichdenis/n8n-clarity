@@ -245,23 +245,17 @@ const Index = () => {
         workflowName: selectedWorkflowName,
         llmModel: selectedModel,
         openRouterApiKey: apiKey,
+        n8nBaseUrl: n8nBaseUrl,
+        n8nApiKey: n8nApiKey,
         panelContext: {
           audience: audience.toLowerCase(),
           mode: mode.toLowerCase().replace(/ /g, "_"),
           existingExplanation: summaryContent || null,
         },
-        chat: {
-          input: null,
-          history: chatMessages,
-        },
       });
 
-      if (result.success) {
-        setSummaryContent(result.explanation);
-        if (result.chatMessage) {
-          const assistantMessage: ChatMessage = { role: "assistant", content: result.chatMessage };
-          setChatMessages((prev) => [...prev, assistantMessage]);
-        }
+      if (result.success && result.output) {
+        setSummaryContent(result.output);
         toast({
           title: "Analysis Generated",
           description: "The workflow analysis has been completed successfully.",
@@ -287,7 +281,10 @@ const Index = () => {
 
   const handleSendChatMessage = async (message: string) => {
     const apiKey = getApiKey();
-    if (!apiKey || !selectedWorkflowId) return;
+    const n8nBaseUrl = getN8nBaseUrl();
+    const n8nApiKey = getN8nApiKey();
+    
+    if (!apiKey || !selectedWorkflowId || !n8nBaseUrl || !n8nApiKey) return;
 
     const userMessage: ChatMessage = { role: "user", content: message };
     setChatMessages((prev) => [...prev, userMessage]);
@@ -302,6 +299,8 @@ const Index = () => {
         workflowName: selectedWorkflowName,
         llmModel: selectedModel,
         openRouterApiKey: apiKey,
+        n8nBaseUrl: n8nBaseUrl,
+        n8nApiKey: n8nApiKey,
         panelContext: {
           currentExplanation: summaryContent || null,
           currentWeakPoints: null,
@@ -313,8 +312,8 @@ const Index = () => {
         },
       });
 
-      if (result.success) {
-        const assistantMessage: ChatMessage = { role: "assistant", content: result.reply };
+      if (result.success && result.output) {
+        const assistantMessage: ChatMessage = { role: "assistant", content: result.output };
         setChatMessages((prev) => [...prev, assistantMessage]);
       } else {
         throw new Error(result.error || "Failed to get response");

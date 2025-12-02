@@ -101,18 +101,16 @@ export function DocumentationBuilder({
         workflowName: selectedWorkflowName,
         llmModel: selectedModel,
         openRouterApiKey: apiKey,
+        n8nBaseUrl: n8nBaseUrl,
+        n8nApiKey: n8nApiKey,
         panelContext: {
           docType: docTypeMap[docType],
           existingDoc: markdown || null,
         },
-        chat: {
-          input: null,
-          history: [],
-        },
       });
 
-      if (result.success) {
-        setMarkdown(result.docMarkdown);
+      if (result.success && result.output) {
+        setMarkdown(result.output);
         toast({
           title: "Documentation Generated",
           description: "The workflow documentation has been completed successfully.",
