@@ -43,30 +43,57 @@ export async function callWebhook(payload: Omit<WebhookPayload, "clientMeta">): 
     body: JSON.stringify(fullPayload),
   });
 
+  // First get response as text to see what we got
+  const responseText = await response.text();
+
+  console.log(`[Webhook] Raw response:`, {
+    status: response.status,
+    contentType: response.headers.get('content-type'),
+    textPreview: responseText.slice(0, 300),
+  });
+
   if (!response.ok) {
-    const errorText = await response.text();
     console.error(`[Webhook] Error response:`, {
       status: response.status,
-      error: errorText,
+      error: responseText,
     });
-    throw new Error(`Webhook error: ${response.status} - ${errorText}`);
+    throw new Error(`Webhook error: ${response.status} - ${responseText}`);
   }
 
   // Parse response as JSON: expect [{ output: "..." }]
-  const result = await response.json();
-  
+  let result;
+  try {
+    result = JSON.parse(responseText);
+  } catch (parseError) {
+    console.error(`[Webhook] JSON parse error:`, {
+      error: parseError instanceof Error ? parseError.message : String(parseError),
+      receivedText: responseText.slice(0, 500),
+    });
+    throw new Error(`Invalid JSON response from webhook. Response starts with: ${responseText.slice(0, 100)}`);
+  }
+
   console.log(`[Webhook] Success response:`, {
     action: payload.action,
     hasResult: !!result,
     isArray: Array.isArray(result),
+    isObject: typeof result === 'object',
     preview: JSON.stringify(result).slice(0, 300),
   });
 
-  // Extract output from canonical n8n response: [{ output: "..." }]
+  // Extract output from n8n webhook response
   // The output field is a string (markdown/text) - do NOT parse it again
+
+  // Case 1: Array format [{ output: "..." }]
   if (Array.isArray(result) && result.length > 0 && result[0].output) {
     return { success: true, output: result[0].output };
   }
 
+  // Case 2: Direct object format { output: "..." }
+  if (result && typeof result === 'object' && 'output' in result && result.output) {
+    return { success: true, output: result.output };
+  }
+
+  // Case 3: Unknown format - return as-is
+  console.warn(`[Webhook] Unexpected response format:`, result);
   return result;
 }
