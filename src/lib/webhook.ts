@@ -61,22 +61,22 @@ export async function callWebhook(payload: Omit<WebhookPayload, "clientMeta">): 
       throw new Error(`Webhook error: ${response.status} - ${responseText}`);
     }
 
-    // Parse response as JSON: expect [{ output: "..." }]
+    // Try to parse response as JSON: expect [{ output: "..." }]
+    // If parsing fails, treat the entire response as markdown/text output
     let result;
     try {
       result = JSON.parse(responseText);
     } catch (parseError) {
       const errorMsg = parseError instanceof Error ? parseError.message : String(parseError);
-      console.error(`[Webhook] JSON parse error:`, {
+      console.warn(`[Webhook] Response is not JSON, treating as plain text/markdown:`, {
         error: errorMsg,
-        receivedText: responseText.slice(0, 500),
+        textLength: responseText.length,
+        textPreview: responseText.slice(0, 200),
       });
 
-      // Return detailed error info for ErrorDialog
-      throw {
-        message: `Invalid JSON response from webhook. Response starts with: ${responseText.slice(0, 100)}`,
-        details: `Full webhook response:\n\n${responseText}\n\n---\n\nJSON Parse Error: ${errorMsg}\n\n---\n\nWebhook URL: ${WEBHOOK_URL}\nAction: ${payload.action}\nWorkflow ID: ${payload.workflowId}`,
-      };
+      // If JSON parsing fails, assume the entire response is the markdown output
+      // This handles cases where n8n returns plain text instead of JSON
+      return { success: true, output: responseText };
     }
 
     console.log(`[Webhook] Success response:`, {
