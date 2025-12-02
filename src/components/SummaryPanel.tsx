@@ -1,6 +1,7 @@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import type { Mode } from "@/types";
 import ReactMarkdown from "react-markdown";
+import { TypingIndicator } from "./TypingAnimation";
 
 interface SummaryPanelProps {
   mode: Mode;
@@ -24,8 +25,8 @@ export function SummaryPanel({ mode, content, isLoading }: SummaryPanelProps) {
       <h2 className="text-lg font-bold mb-4 text-[hsl(var(--text-main))]">{mode}</h2>
       <ScrollArea className="flex-1">
         {isLoading ? (
-          <div className="flex items-center justify-center h-full">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          <div className="flex items-center justify-center h-32">
+            <TypingIndicator variant="generation" />
           </div>
         ) : content ? (
           <div className="prose prose-invert max-w-none text-[hsl(var(--text-main))]">

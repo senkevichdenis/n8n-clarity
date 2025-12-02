@@ -5,6 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { getApiKey } from "@/lib/storage";
 import { generateStickyNotes } from "@/lib/openrouter";
 import { useState } from "react";
+import { TypingIndicator } from "./TypingAnimation";
 
 interface DocumentationEditorProps {
   markdown: string;
@@ -112,8 +113,8 @@ export function DocumentationEditor({
       </div>
       <div className="flex-1 p-8 overflow-hidden flex flex-col">
         {isGenerating ? (
-          <div className="flex items-center justify-center h-full">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          <div className="flex items-center justify-center h-32">
+            <TypingIndicator variant="generation" />
           </div>
         ) : !markdown.trim() ? (
           <p className="text-[hsl(var(--text-muted))]">
