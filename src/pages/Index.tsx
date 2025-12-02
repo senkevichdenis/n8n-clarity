@@ -6,6 +6,7 @@ import { WorkflowControls } from "@/components/WorkflowControls";
 import { SummaryPanel } from "@/components/SummaryPanel";
 import { ChatPanel } from "@/components/ChatPanel";
 import { DocumentationBuilder } from "@/components/DocumentationBuilder";
+import { ErrorDialog } from "@/components/ErrorDialog";
 import { useToast } from "@/hooks/use-toast";
 import { getApiKey, getN8nBaseUrl, getN8nApiKey, getModel, saveModel } from "@/lib/storage";
 import { callWebhook } from "@/lib/webhook";
@@ -30,6 +31,12 @@ const Index = () => {
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [isChatLoading, setIsChatLoading] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
+  const [errorDialog, setErrorDialog] = useState<{
+    open: boolean;
+    title: string;
+    message: string;
+    details?: string;
+  }>({ open: false, title: "", message: "" });
 
   // Check for API key on mount
   useEffect(() => {
@@ -265,13 +272,25 @@ const Index = () => {
       }
     } catch (error) {
       console.error("[Explain] Generation error:", error);
-      toast({
+
+      // Check if error has details property (from webhook.ts)
+      const errorMessage = error && typeof error === 'object' && 'message' in error
+        ? String(error.message)
+        : error instanceof Error
+        ? error.message
+        : "Could not generate analysis. Please try again.";
+
+      const errorDetails = error && typeof error === 'object' && 'details' in error
+        ? String(error.details)
+        : error instanceof Error && error.stack
+        ? error.stack
+        : undefined;
+
+      setErrorDialog({
+        open: true,
         title: "Generation Failed",
-        description:
-          error instanceof Error
-            ? error.message
-            : "Could not generate analysis. Please try again.",
-        variant: "destructive",
+        message: errorMessage,
+        details: errorDetails,
       });
     } finally {
       setIsGenerating(false);
@@ -320,10 +339,25 @@ const Index = () => {
       }
     } catch (error) {
       console.error("Chat error:", error);
-      toast({
+
+      // Check if error has details property (from webhook.ts)
+      const errorMessage = error && typeof error === 'object' && 'message' in error
+        ? String(error.message)
+        : error instanceof Error
+        ? error.message
+        : "Failed to send message.";
+
+      const errorDetails = error && typeof error === 'object' && 'details' in error
+        ? String(error.details)
+        : error instanceof Error && error.stack
+        ? error.stack
+        : undefined;
+
+      setErrorDialog({
+        open: true,
         title: "Chat Error",
-        description: error instanceof Error ? error.message : "Failed to send message.",
-        variant: "destructive",
+        message: errorMessage,
+        details: errorDetails,
       });
     } finally {
       setIsChatLoading(false);
@@ -394,6 +428,14 @@ const Index = () => {
           }}
           selectedModel={selectedModel}
           onModelChange={handleModelChange}
+        />
+
+        <ErrorDialog
+          open={errorDialog.open}
+          onOpenChange={(open) => setErrorDialog({ ...errorDialog, open })}
+          title={errorDialog.title}
+          message={errorDialog.message}
+          details={errorDialog.details}
         />
       </div>
     </div>
