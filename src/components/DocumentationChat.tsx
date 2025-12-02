@@ -8,6 +8,7 @@ import { getApiKey, getN8nBaseUrl, getN8nApiKey } from "@/lib/storage";
 import { callWebhook } from "@/lib/webhook";
 import type { ChatMessage } from "@/types";
 import type { DocumentationType } from "@/lib/openrouter";
+import { TypingIndicator } from "./TypingAnimation";
 
 interface DocumentationChatProps {
   messages: ChatMessage[];
@@ -164,11 +165,7 @@ export function DocumentationChat({
             {isLoading && (
               <div className="p-4 rounded bg-[hsl(var(--chat-assistant-bg))] text-[hsl(var(--text-main))]">
                 <div className="text-xs mb-2 opacity-70">Assistant</div>
-                <div className="flex gap-1">
-                  <div className="w-2 h-2 bg-[hsl(var(--text-muted))] rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-                  <div className="w-2 h-2 bg-[hsl(var(--text-muted))] rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-                  <div className="w-2 h-2 bg-[hsl(var(--text-muted))] rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
-                </div>
+                <TypingIndicator variant="chat" />
               </div>
             )}
           </div>
