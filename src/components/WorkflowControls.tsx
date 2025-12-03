@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { LLMModelSelector } from "@/components/LLMModelSelector";
 import type { Workflow, Audience, Mode } from "@/types";
 import type { DocumentationType } from "@/lib/openrouter";
 import { Loader2 } from "lucide-react";
@@ -18,6 +19,8 @@ interface WorkflowControlsProps {
   isDocumentationMode?: boolean;
   docType?: DocumentationType;
   onDocTypeChange?: (docType: DocumentationType) => void;
+  selectedModel: string;
+  onModelChange: (model: string) => void;
 }
 
 const audiences: Audience[] = ["Engineer", "Manager", "Newbie"];
@@ -38,6 +41,8 @@ export function WorkflowControls({
   isDocumentationMode = false,
   docType,
   onDocTypeChange,
+  selectedModel,
+  onModelChange,
 }: WorkflowControlsProps) {
   const canGenerate = selectedWorkflowId && !isGenerating && (!isDocumentationMode ? mode !== "Q&A Only" : true);
 
@@ -111,6 +116,8 @@ export function WorkflowControls({
           ))}
         </div>
       )}
+
+      <LLMModelSelector value={selectedModel} onChange={onModelChange} />
 
       <Button
         onClick={onGenerate}
