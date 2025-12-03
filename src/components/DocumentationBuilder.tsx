@@ -142,7 +142,7 @@ export function DocumentationBuilder({
   };
 
   return (
-    <div className="flex flex-col flex-1">
+    <div className="flex flex-col flex-1 min-h-0">
       <WorkflowControls
         workflows={workflows}
         selectedWorkflowId={selectedWorkflowId}

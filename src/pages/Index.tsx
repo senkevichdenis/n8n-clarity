@@ -359,10 +359,10 @@ const Index = () => {
       <AppSidebar activeScreen={activeScreen} onScreenChange={setActiveScreen} />
 
       <main className="flex-1 overflow-auto">
-        <div className="flex flex-col min-h-screen p-8">
-          <div className="max-w-[1600px] mx-auto flex-1 flex flex-col w-full">
+        <div className="flex flex-col h-full p-8">
+          <div className="max-w-[1600px] mx-auto flex-1 flex flex-col w-full min-h-0">
             {activeScreen === "explain" && (
-              <div className="flex flex-col flex-1">
+              <div className="flex flex-col flex-1 min-h-0">
                 <h1 className="text-2xl font-bold text-[hsl(var(--text-main))] mb-6">Explain My Automation</h1>
                 <WorkflowControls
                   workflows={workflows}
@@ -396,7 +396,7 @@ const Index = () => {
             )}
 
             {activeScreen === "documentation" && (
-              <div className="flex flex-col flex-1">
+              <div className="flex flex-col flex-1 min-h-0">
                 <h1 className="text-2xl font-bold text-[hsl(var(--text-main))] mb-6">Documentation Builder</h1>
                 <DocumentationBuilder
                   workflows={workflows}
