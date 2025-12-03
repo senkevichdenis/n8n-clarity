@@ -44,10 +44,7 @@ export function ChatBubbleMessage({
   return (
     <div
       className={cn(
-        "rounded-lg p-3 max-w-[80%]",
-        variant === "sent" 
-          ? "bg-[hsl(var(--chat-user-bg))] text-[hsl(var(--text-main))]" 
-          : "bg-[hsl(var(--chat-assistant-bg))] text-[hsl(var(--text-main))]",
+        "text-[hsl(var(--text-main))]",
         className
       )}
     >

@@ -246,10 +246,6 @@ const Index = () => {
 
       if (result.success && result.output) {
         setSummaryContent(result.output);
-        toast({
-          title: "Analysis Generated",
-          description: "The workflow analysis has been completed successfully.",
-        });
       } else {
         throw new Error(result.error || "Failed to generate analysis");
       }
