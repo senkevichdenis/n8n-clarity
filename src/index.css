@@ -17,7 +17,7 @@ All colors MUST be HSL.
     --popover: 0 0% 6%;
     --popover-foreground: 0 0% 92%;
 
-    --primary: 214 100% 59%;
+    --primary: 0 0% 25%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 0 0% 15%;
@@ -26,7 +26,7 @@ All colors MUST be HSL.
     --muted: 0 0% 10%;
     --muted-foreground: 0 0% 45%;
 
-    --accent: 214 100% 59%;
+    --accent: 0 0% 20%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
@@ -34,7 +34,7 @@ All colors MUST be HSL.
 
     --border: 0 0% 10%;
     --input: 0 0% 8%;
-    --ring: 214 100% 59%;
+    --ring: 0 0% 25%;
 
     --radius: 0.25rem;
 
@@ -48,14 +48,14 @@ All colors MUST be HSL.
     --text-secondary: 0 0% 70%;
     --text-muted: 0 0% 45%;
 
-    --accent-soft: 214 100% 59% / 0.15;
+    --accent-soft: 0 0% 20% / 0.15;
 
     --border-subtle: 0 0% 10%;
     --border-strong: 0 0% 25%;
     --divider: 0 0% 8%;
 
     --chat-assistant-bg: 0 0% 8%;
-    --chat-user-bg: 214 45% 15%;
+    --chat-user-bg: 0 0% 12%;
     --chat-system-text: 0 0% 60%;
 
     --btn-bg: 0 0% 12%;
@@ -74,12 +74,12 @@ All colors MUST be HSL.
 
     --sidebar-background: 0 0% 7%;
     --sidebar-foreground: 0 0% 70%;
-    --sidebar-primary: 214 100% 59%;
+    --sidebar-primary: 0 0% 25%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 0 0% 10%;
     --sidebar-accent-foreground: 0 0% 92%;
     --sidebar-border: 0 0% 10%;
-    --sidebar-ring: 214 100% 59%;
+    --sidebar-ring: 0 0% 25%;
 
     --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif;
     --font-size-base: 15px;
