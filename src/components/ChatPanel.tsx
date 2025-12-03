@@ -48,9 +48,9 @@ export function ChatPanel({ messages, onSendMessage, isLoading, disabled }: Chat
       <ScrollArea className="flex-1 p-6" ref={scrollAreaRef}>
         {messages.length === 0 ? (
           <div className="flex items-center justify-center h-full">
-            <p className="text-[hsl(var(--text-muted))] text-center">
+            <p className="text-[hsl(var(--text-muted))] text-center text-sm">
               {disabled
-                ? "Please select a workflow and configure your API key to start chatting"
+                ? "Select workflow and configure settings"
                 : "Start a conversation about the workflow"}
             </p>
           </div>
