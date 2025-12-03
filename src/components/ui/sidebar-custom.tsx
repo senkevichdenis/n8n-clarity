@@ -173,21 +173,22 @@ export const SidebarLink = ({
     <button
       onClick={onClick}
       className={cn(
-        "flex items-center gap-3 group/sidebar py-3 px-3 rounded-lg w-full transition-colors",
-        open ? "justify-start" : "justify-center",
+        "flex items-center group/sidebar py-3 px-3 rounded-lg w-full transition-colors",
         active
           ? "bg-[hsl(var(--tab-bg-active))] text-[hsl(var(--text-main))]"
           : "text-[hsl(var(--text-secondary))] hover:bg-[hsl(var(--tab-bg-active))] hover:text-[hsl(var(--text-main))]",
         className
       )}
     >
-      {icon}
+      <div className="w-5 h-5 flex items-center justify-center flex-shrink-0">
+        {icon}
+      </div>
       <motion.span
         animate={{
           display: animate ? (open ? "inline-block" : "none") : "inline-block",
           opacity: animate ? (open ? 1 : 0) : 1,
         }}
-        className="text-sm font-medium group-hover/sidebar:translate-x-1 transition duration-150 whitespace-pre inline-block !p-0 !m-0"
+        className="text-sm font-medium group-hover/sidebar:translate-x-1 transition duration-150 whitespace-pre inline-block !p-0 !m-0 ml-3"
       >
         {label}
       </motion.span>
