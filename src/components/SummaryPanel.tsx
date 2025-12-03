@@ -5,6 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import type { Mode } from "@/types";
 import ReactMarkdown from "react-markdown";
 import { TypingIndicator } from "./TypingAnimation";
+import { useTextStream } from "@/components/ui/response-stream";
 
 interface SummaryPanelProps {
   mode: Mode;
@@ -14,6 +15,12 @@ interface SummaryPanelProps {
 
 export function SummaryPanel({ mode, content, isLoading }: SummaryPanelProps) {
   const { toast } = useToast();
+
+  const { displayedText } = useTextStream({
+    textStream: content || "",
+    speed: 80,
+    mode: "typewriter",
+  });
 
   // Convert markdown to plain text (strip markdown syntax)
   const markdownToPlainText = (md: string): string => {
@@ -94,7 +101,19 @@ export function SummaryPanel({ mode, content, isLoading }: SummaryPanelProps) {
             </div>
           ) : content ? (
             <div className="prose prose-invert max-w-none text-[hsl(var(--text-main))]">
-              <ReactMarkdown>{content}</ReactMarkdown>
+              <ReactMarkdown
+                components={{
+                  p: ({ children }) => <p className="mb-4 last:mb-0">{children}</p>,
+                  h1: ({ children }) => <h1 className="mb-4 mt-6 first:mt-0">{children}</h1>,
+                  h2: ({ children }) => <h2 className="mb-3 mt-6 first:mt-0">{children}</h2>,
+                  h3: ({ children }) => <h3 className="mb-2 mt-4 first:mt-0">{children}</h3>,
+                  ul: ({ children }) => <ul className="mb-4 ml-6 list-disc">{children}</ul>,
+                  ol: ({ children }) => <ol className="mb-4 ml-6 list-decimal">{children}</ol>,
+                  li: ({ children }) => <li className="mb-1">{children}</li>,
+                }}
+              >
+                {displayedText}
+              </ReactMarkdown>
             </div>
           ) : (
             <p className="text-[hsl(var(--text-muted))] text-sm">

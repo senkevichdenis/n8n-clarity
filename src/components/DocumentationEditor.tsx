@@ -8,6 +8,7 @@ import { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { TypingIndicator } from "./TypingAnimation";
+import { useTextStream } from "@/components/ui/response-stream";
 
 interface DocumentationEditorProps {
   markdown: string;
@@ -25,6 +26,12 @@ export function DocumentationEditor({
   const { toast } = useToast();
   const [isGeneratingStickyNotes, setIsGeneratingStickyNotes] = useState(false);
   const [viewMode, setViewMode] = useState<"edit" | "preview">("preview");
+
+  const { displayedText } = useTextStream({
+    textStream: markdown,
+    speed: 80,
+    mode: "typewriter",
+  });
 
   // Convert markdown to plain text (strip markdown syntax)
   const markdownToPlainText = (md: string): string => {
@@ -188,7 +195,19 @@ export function DocumentationEditor({
         ) : viewMode === "preview" ? (
           <ScrollArea className="h-full">
             <div className="prose prose-invert max-w-none text-[hsl(var(--text-main))]">
-              <ReactMarkdown>{markdown}</ReactMarkdown>
+              <ReactMarkdown
+                components={{
+                  p: ({ children }) => <p className="mb-4 last:mb-0">{children}</p>,
+                  h1: ({ children }) => <h1 className="mb-4 mt-6 first:mt-0">{children}</h1>,
+                  h2: ({ children }) => <h2 className="mb-3 mt-6 first:mt-0">{children}</h2>,
+                  h3: ({ children }) => <h3 className="mb-2 mt-4 first:mt-0">{children}</h3>,
+                  ul: ({ children }) => <ul className="mb-4 ml-6 list-disc">{children}</ul>,
+                  ol: ({ children }) => <ol className="mb-4 ml-6 list-decimal">{children}</ol>,
+                  li: ({ children }) => <li className="mb-1">{children}</li>,
+                }}
+              >
+                {displayedText}
+              </ReactMarkdown>
             </div>
           </ScrollArea>
         ) : (
