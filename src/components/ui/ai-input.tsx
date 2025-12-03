@@ -1,6 +1,6 @@
 "use client";
 
-import { Send } from "lucide-react";
+import { CornerRightUp } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";
@@ -46,12 +46,12 @@ export function AIInput({
           placeholder={placeholder}
           disabled={disabled}
           className={cn(
-            "w-full bg-[hsl(var(--bg-input))] rounded-lg pl-4 pr-12",
+            "w-full bg-[hsl(var(--bg-input))] rounded-3xl pl-4 pr-12",
             "placeholder:text-[hsl(var(--text-muted))]",
             "border border-[hsl(var(--border-subtle))]",
             "text-[hsl(var(--text-main))] text-wrap",
             "overflow-y-auto resize-none",
-            "focus-visible:outline-none",
+            "focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0",
             "transition-[height] duration-100 ease-out",
             "leading-[1.3] py-3",
             `min-h-[${minHeight}px]`,
@@ -77,16 +77,16 @@ export function AIInput({
           type="button"
           disabled={disabled || !inputValue.trim()}
           className={cn(
-            "absolute top-1/2 -translate-y-1/2 right-3",
-            "rounded-lg bg-[hsl(var(--btn-bg))] border border-[hsl(var(--btn-border))] hover:bg-[hsl(var(--btn-bg-hover))] p-2",
-            "transition-all duration-200",
-            "disabled:opacity-50 disabled:cursor-not-allowed",
+            "absolute bottom-3 right-3",
+            "rounded-full bg-[hsl(var(--btn-bg))] border border-[hsl(var(--btn-border))] hover:bg-[hsl(var(--btn-bg-hover))] p-2",
+            "transition-all duration-300 ease-in-out",
+            "disabled:cursor-not-allowed",
             inputValue.trim() && !disabled
-              ? "opacity-100 scale-100" 
-              : "opacity-50 scale-95"
+              ? "opacity-100 scale-100 translate-y-0"
+              : "opacity-0 scale-90 translate-y-1 pointer-events-none"
           )}
         >
-          <Send className="w-4 h-4 text-[hsl(var(--text-main))]" />
+          <CornerRightUp className="w-4 h-4 text-[hsl(var(--text-main))]" />
         </button>
       </div>
     </div>
