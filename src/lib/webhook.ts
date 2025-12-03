@@ -9,6 +9,14 @@ interface WebhookPayload {
   openRouterApiKey: string | null;
   n8nBaseUrl: string;
   n8nApiKey: string;
+  workflowData?: {
+    id: string;
+    name: string;
+    nodes: any[];
+    connections: any;
+    settings: any;
+    active: boolean;
+  };
   panelContext: any;
   chat?: {
     input: string | null;

@@ -1,3 +1,4 @@
+import { useRef, useEffect } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Copy, FileText } from "lucide-react";
@@ -15,12 +16,18 @@ interface SummaryPanelProps {
 
 export function SummaryPanel({ mode, content, isLoading }: SummaryPanelProps) {
   const { toast } = useToast();
+  const scrollEndRef = useRef<HTMLDivElement>(null);
 
   const { displayedText } = useTextStream({
     textStream: content || "",
     speed: 80,
     mode: "typewriter",
   });
+
+  // Auto-scroll to bottom when new content is displayed
+  useEffect(() => {
+    scrollEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [displayedText]);
 
   // Convert markdown to plain text (strip markdown syntax)
   const markdownToPlainText = (md: string): string => {
@@ -114,6 +121,7 @@ export function SummaryPanel({ mode, content, isLoading }: SummaryPanelProps) {
               >
                 {displayedText}
               </ReactMarkdown>
+              <div ref={scrollEndRef} />
             </div>
           ) : (
             <p className="text-[hsl(var(--text-muted))] text-sm">

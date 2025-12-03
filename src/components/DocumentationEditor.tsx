@@ -4,7 +4,7 @@ import { Copy, Code, FileText, Eye, Edit } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { getApiKey } from "@/lib/storage";
 import { generateStickyNotes } from "@/lib/openrouter";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { TypingIndicator } from "./TypingAnimation";
@@ -26,12 +26,20 @@ export function DocumentationEditor({
   const { toast } = useToast();
   const [isGeneratingStickyNotes, setIsGeneratingStickyNotes] = useState(false);
   const [viewMode, setViewMode] = useState<"edit" | "preview">("preview");
+  const scrollEndRef = useRef<HTMLDivElement>(null);
 
   const { displayedText } = useTextStream({
     textStream: markdown,
     speed: 80,
     mode: "typewriter",
   });
+
+  // Auto-scroll to bottom when new content is displayed in preview mode
+  useEffect(() => {
+    if (viewMode === "preview") {
+      scrollEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [displayedText, viewMode]);
 
   // Convert markdown to plain text (strip markdown syntax)
   const markdownToPlainText = (md: string): string => {
@@ -208,6 +216,7 @@ export function DocumentationEditor({
               >
                 {displayedText}
               </ReactMarkdown>
+              <div ref={scrollEndRef} />
             </div>
           </ScrollArea>
         ) : (
