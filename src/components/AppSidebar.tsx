@@ -48,11 +48,11 @@ export function AppSidebar({ activeScreen, onScreenChange }: AppSidebarProps) {
 
 function Logo({ open }: { open: boolean }) {
   const { animate } = useSidebar();
-  
+
   return (
-    <div className="font-normal flex space-x-2 items-center text-sm py-1 relative z-20">
-      <div className="h-6 w-6 bg-primary rounded-lg flex-shrink-0 flex items-center justify-center">
-        <Zap className="h-4 w-4 text-primary-foreground" />
+    <div className="font-normal flex items-center text-sm py-1 relative z-20 gap-3">
+      <div className="h-9 w-9 rounded-xl flex-shrink-0 flex items-center justify-center" style={{ backgroundColor: '#FFB627' }}>
+        <span className="text-xl font-bold text-white">D</span>
       </div>
       <motion.span
         animate={{
@@ -61,7 +61,7 @@ function Logo({ open }: { open: boolean }) {
         }}
         className="font-semibold text-[hsl(var(--text-main))] whitespace-pre"
       >
-        Explain My Automation
+        Den's Tools
       </motion.span>
     </div>
   );
