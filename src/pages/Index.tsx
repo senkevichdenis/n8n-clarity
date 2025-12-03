@@ -355,59 +355,61 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen flex w-full bg-[hsl(var(--bg-page))]">
+    <div className="flex h-screen w-screen overflow-hidden bg-[hsl(var(--bg-page))]">
       <AppSidebar activeScreen={activeScreen} onScreenChange={setActiveScreen} />
-      
-      <main className="flex-1 p-8 overflow-auto">
-        <div className="max-w-[1600px] mx-auto">
-          {activeScreen === "explain" && (
-            <>
-              <h1 className="text-2xl font-bold text-[hsl(var(--text-main))] mb-6">Explain My Automation</h1>
-              <WorkflowControls
-                workflows={workflows}
-                selectedWorkflowId={selectedWorkflowId}
-                onWorkflowChange={handleWorkflowChange}
-                audience={audience}
-                onAudienceChange={setAudience}
-                mode={mode}
-                onModeChange={setMode}
-                onGenerate={handleGenerate}
-                isGenerating={isGenerating}
-                loadingWorkflows={loadingWorkflows}
-                selectedModel={selectedModel}
-                onModelChange={setSelectedModel}
-              />
 
-              <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 h-[calc(100vh-280px)]">
-                <div className="lg:col-span-3">
-                  <SummaryPanel mode={mode} content={summaryContent} isLoading={isGenerating} />
+      <main className="flex-1 overflow-auto">
+        <div className="p-8">
+          <div className="max-w-[1600px] mx-auto">
+            {activeScreen === "explain" && (
+              <>
+                <h1 className="text-2xl font-bold text-[hsl(var(--text-main))] mb-6">Explain My Automation</h1>
+                <WorkflowControls
+                  workflows={workflows}
+                  selectedWorkflowId={selectedWorkflowId}
+                  onWorkflowChange={handleWorkflowChange}
+                  audience={audience}
+                  onAudienceChange={setAudience}
+                  mode={mode}
+                  onModeChange={setMode}
+                  onGenerate={handleGenerate}
+                  isGenerating={isGenerating}
+                  loadingWorkflows={loadingWorkflows}
+                  selectedModel={selectedModel}
+                  onModelChange={setSelectedModel}
+                />
+
+                <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 h-[calc(100vh-280px)]">
+                  <div className="lg:col-span-3">
+                    <SummaryPanel mode={mode} content={summaryContent} isLoading={isGenerating} />
+                  </div>
+                  <div className="lg:col-span-2">
+                    <ChatPanel
+                      messages={chatMessages}
+                      onSendMessage={handleSendChatMessage}
+                      isLoading={isChatLoading}
+                      disabled={chatDisabled}
+                    />
+                  </div>
                 </div>
-                <div className="lg:col-span-2">
-                  <ChatPanel
-                    messages={chatMessages}
-                    onSendMessage={handleSendChatMessage}
-                    isLoading={isChatLoading}
-                    disabled={chatDisabled}
-                  />
-                </div>
-              </div>
-            </>
-          )}
+              </>
+            )}
 
-          {activeScreen === "documentation" && (
-            <>
-              <h1 className="text-2xl font-bold text-[hsl(var(--text-main))] mb-6">Documentation Builder</h1>
-              <DocumentationBuilder
-                workflows={workflows}
-                loadingWorkflows={loadingWorkflows}
-                onSettingsClick={() => setActiveScreen("settings")}
-              />
-            </>
-          )}
+            {activeScreen === "documentation" && (
+              <>
+                <h1 className="text-2xl font-bold text-[hsl(var(--text-main))] mb-6">Documentation Builder</h1>
+                <DocumentationBuilder
+                  workflows={workflows}
+                  loadingWorkflows={loadingWorkflows}
+                  onSettingsClick={() => setActiveScreen("settings")}
+                />
+              </>
+            )}
 
-          {activeScreen === "settings" && (
-            <SettingsScreen onSave={handleSettingsSave} />
-          )}
+            {activeScreen === "settings" && (
+              <SettingsScreen onSave={handleSettingsSave} />
+            )}
+          </div>
         </div>
       </main>
 
