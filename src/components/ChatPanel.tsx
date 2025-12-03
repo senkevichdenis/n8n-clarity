@@ -1,11 +1,12 @@
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, Loader2 } from "lucide-react";
+import { Send } from "lucide-react";
 import type { ChatMessage } from "@/types";
 import ReactMarkdown from "react-markdown";
-import { TypingIndicator } from "./TypingAnimation";
+import { ChatMessageList } from "@/components/ui/chat-message-list";
+import { ChatBubble, ChatBubbleMessage } from "@/components/ui/chat-bubble";
+import { ChatInput } from "@/components/ui/chat-input";
+import { useTextStream } from "@/components/ui/response-stream";
 
 interface ChatPanelProps {
   messages: ChatMessage[];
@@ -16,16 +17,18 @@ interface ChatPanelProps {
 
 export function ChatPanel({ messages, onSendMessage, isLoading, disabled }: ChatPanelProps) {
   const [input, setInput] = useState("");
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  // Get the last assistant message for typing animation
+  const lastMessage = messages.length > 0 ? messages[messages.length - 1] : null;
+  const { displayedText } = useTextStream({
+    textStream: lastMessage?.role === "assistant" ? lastMessage.content : "",
+    speed: 30,
+    mode: "typewriter",
+  });
 
   const handleSend = async () => {
     if (!input.trim() || isLoading || disabled) return;
-    
+
     const message = input;
     setInput("");
     await onSendMessage(message);
@@ -45,7 +48,7 @@ export function ChatPanel({ messages, onSendMessage, isLoading, disabled }: Chat
         <p className="text-xs text-[hsl(var(--text-muted))]">Ask questions about the workflow</p>
       </div>
 
-      <ScrollArea className="flex-1 p-6" ref={scrollAreaRef}>
+      <div className="flex-1 overflow-hidden">
         {messages.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <p className="text-[hsl(var(--text-muted))] text-center text-sm">
@@ -55,53 +58,71 @@ export function ChatPanel({ messages, onSendMessage, isLoading, disabled }: Chat
             </p>
           </div>
         ) : (
-          <div className="space-y-4">
-            {messages.map((msg, idx) => (
-              <div
-                key={idx}
-                className={`p-4 rounded ${
-                  msg.role === "user"
-                    ? "bg-[hsl(var(--chat-user-bg))]"
-                    : msg.role === "assistant"
-                    ? "bg-[hsl(var(--chat-assistant-bg))]"
-                    : "bg-transparent"
-                } ${msg.role === "system" ? "italic text-[hsl(var(--chat-system-text))]" : "text-[hsl(var(--text-main))]"}`}
-              >
-                <div className="text-xs mb-2 opacity-70 capitalize">{msg.role}</div>
-                <div className="prose prose-invert max-w-none [&>*]:text-base">
-                  <ReactMarkdown>{msg.content}</ReactMarkdown>
-                </div>
-              </div>
-            ))}
+          <ChatMessageList smooth>
+            {messages.map((msg, idx) => {
+              const isLastAssistant = idx === messages.length - 1 && msg.role === "assistant";
+
+              return (
+                <ChatBubble
+                  key={idx}
+                  variant={msg.role === "user" ? "sent" : "received"}
+                >
+                  <ChatBubbleMessage variant={msg.role === "user" ? "sent" : "received"}>
+                    <div className="prose prose-invert max-w-none text-sm">
+                      <ReactMarkdown
+                        components={{
+                          p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+                          ul: ({ children }) => <ul className="mb-2 ml-4 list-disc">{children}</ul>,
+                          ol: ({ children }) => <ol className="mb-2 ml-4 list-decimal">{children}</ol>,
+                          li: ({ children }) => <li className="mb-1">{children}</li>,
+                          code: ({ children }) => <code className="bg-[hsl(var(--bg-panel))] px-1 py-0.5 rounded text-xs">{children}</code>,
+                        }}
+                      >
+                        {isLastAssistant ? displayedText : msg.content}
+                      </ReactMarkdown>
+                    </div>
+                  </ChatBubbleMessage>
+                </ChatBubble>
+              );
+            })}
+
             {isLoading && (
-              <div className="p-4 rounded bg-[hsl(var(--chat-assistant-bg))] text-[hsl(var(--text-main))]">
-                <div className="text-xs mb-2 opacity-70">Assistant</div>
-                <TypingIndicator variant="chat" />
-              </div>
+              <ChatBubble variant="received">
+                <ChatBubbleMessage variant="received" isLoading />
+              </ChatBubble>
             )}
-            <div ref={messagesEndRef} />
-          </div>
+          </ChatMessageList>
         )}
-      </ScrollArea>
+      </div>
 
       <div className="p-4 border-t border-[hsl(var(--border-subtle))] bg-[hsl(var(--bg-panel-alt))]">
-        <div className="flex gap-2">
-          <Input
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleSend();
+          }}
+          className="relative rounded-lg border border-[hsl(var(--border-subtle))] bg-[hsl(var(--bg-input))] focus-within:ring-1 focus-within:ring-[hsl(var(--ring))] p-1"
+        >
+          <ChatInput
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={disabled ? "Configure settings first..." : "Ask a question..."}
             disabled={disabled || isLoading}
-            className="flex-1 bg-[hsl(var(--bg-input))] border-[hsl(var(--border-subtle))] text-[hsl(var(--text-main))]"
+            className="min-h-12 resize-none rounded-lg bg-[hsl(var(--bg-input))] border-0 p-3 shadow-none focus-visible:ring-0 text-[hsl(var(--text-main))]"
           />
-          <Button
-            onClick={handleSend}
-            disabled={!input.trim() || isLoading || disabled}
-            className="bg-[hsl(var(--btn-bg))] border border-[hsl(var(--btn-border))] hover:bg-[hsl(var(--btn-bg-hover))] text-[hsl(var(--text-main))]"
-          >
-            {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-          </Button>
-        </div>
+          <div className="flex items-center p-3 pt-0 justify-end">
+            <Button
+              type="submit"
+              size="sm"
+              disabled={!input.trim() || isLoading || disabled}
+              className="ml-auto gap-1.5 bg-[hsl(var(--btn-bg))] border border-[hsl(var(--btn-border))] hover:bg-[hsl(var(--btn-bg-hover))] text-[hsl(var(--text-main))]"
+            >
+              Send
+              <Send className="size-3.5" />
+            </Button>
+          </div>
+        </form>
       </div>
     </div>
   );
