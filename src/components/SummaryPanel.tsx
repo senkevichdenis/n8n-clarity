@@ -97,8 +97,8 @@ export function SummaryPanel({ mode, content, isLoading }: SummaryPanelProps) {
               <ReactMarkdown>{content}</ReactMarkdown>
             </div>
           ) : (
-            <p className="text-[hsl(var(--text-muted))]">
-              Select a workflow, choose your settings, and click Generate to see the analysis.
+            <p className="text-[hsl(var(--text-muted))] text-sm">
+              Select workflow and click Generate to begin.
             </p>
           )}
         </ScrollArea>

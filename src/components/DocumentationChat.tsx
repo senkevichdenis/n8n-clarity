@@ -139,10 +139,10 @@ export function DocumentationChat({
       <ScrollArea className="flex-1 p-6">
         {messages.length === 0 ? (
           <div className="flex items-center justify-center h-full">
-            <p className="text-[hsl(var(--text-muted))] text-center">
+            <p className="text-[hsl(var(--text-muted))] text-center text-sm">
               {disabled
-                ? "Generate documentation first to start editing"
-                : "Use this chat to edit the documentation with natural language instructions"}
+                ? "Generate documentation first"
+                : "Edit documentation with natural language"}
             </p>
           </div>
         ) : (
