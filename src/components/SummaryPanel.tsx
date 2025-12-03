@@ -61,27 +61,27 @@ export function SummaryPanel({ mode, content, isLoading }: SummaryPanelProps) {
 
   return (
     <div className="bg-[hsl(var(--bg-panel))] border border-[hsl(var(--border-subtle))] rounded-lg h-full flex flex-col">
-      <div className="border-b border-[hsl(var(--border-subtle))] p-4 flex justify-between items-center">
-        <h2 className="text-lg font-semibold text-[hsl(var(--text-main))]">{mode}</h2>
+      <div className="border-b border-[hsl(var(--border-subtle))] px-4 py-3 flex justify-between items-center">
+        <h2 className="text-base font-semibold text-[hsl(var(--text-main))]">{mode}</h2>
         {content && !isLoading && (
-          <div className="flex gap-2">
+          <div className="flex gap-1.5">
             <Button
               variant="outline"
               size="sm"
               onClick={handleCopyText}
-              className="bg-[hsl(var(--btn-bg))] border-[hsl(var(--btn-border))] hover:bg-[hsl(var(--btn-bg-hover))]"
+              className="bg-[hsl(var(--btn-bg))] border-[hsl(var(--btn-border))] hover:bg-[hsl(var(--btn-bg-hover))] h-8 px-2.5 text-xs"
             >
-              <Copy className="h-4 w-4 mr-2" />
-              Copy Text
+              <Copy className="h-3.5 w-3.5 mr-1.5" />
+              Text
             </Button>
             <Button
               variant="outline"
               size="sm"
               onClick={handleCopyMarkdown}
-              className="bg-[hsl(var(--btn-bg))] border-[hsl(var(--btn-border))] hover:bg-[hsl(var(--btn-bg-hover))]"
+              className="bg-[hsl(var(--btn-bg))] border-[hsl(var(--btn-border))] hover:bg-[hsl(var(--btn-bg-hover))] h-8 px-2.5 text-xs"
             >
-              <FileText className="h-4 w-4 mr-2" />
-              Copy Markdown
+              <FileText className="h-3.5 w-3.5 mr-1.5" />
+              Markdown
             </Button>
           </div>
         )}

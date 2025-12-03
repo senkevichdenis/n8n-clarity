@@ -131,9 +131,9 @@ export function DocumentationChat({
 
   return (
     <div className="bg-[hsl(var(--bg-chat))] border border-[hsl(var(--border-subtle))] rounded flex flex-col h-full">
-      <div className="p-4 border-b border-[hsl(var(--border-subtle))]">
-        <h2 className="text-lg font-bold text-[hsl(var(--text-main))]">Edit Documentation</h2>
-        <p className="text-sm text-[hsl(var(--text-muted))]">Give instructions to modify the documentation</p>
+      <div className="px-4 py-3 border-b border-[hsl(var(--border-subtle))]">
+        <h2 className="text-base font-semibold text-[hsl(var(--text-main))]">Edit Documentation</h2>
+        <p className="text-xs text-[hsl(var(--text-muted))]">Give instructions to modify the documentation</p>
       </div>
 
       <ScrollArea className="flex-1 p-6">
