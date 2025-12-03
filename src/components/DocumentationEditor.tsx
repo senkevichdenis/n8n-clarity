@@ -182,8 +182,8 @@ export function DocumentationEditor({
             <TypingIndicator variant="generation" />
           </div>
         ) : !markdown.trim() ? (
-          <p className="text-[hsl(var(--text-muted))]">
-            Select a workflow, choose your settings, and click Generate Documentation to begin.
+          <p className="text-[hsl(var(--text-muted))] text-sm">
+            Select workflow and click Generate Docs to begin.
           </p>
         ) : viewMode === "preview" ? (
           <ScrollArea className="h-full">
