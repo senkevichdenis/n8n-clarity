@@ -1,11 +1,9 @@
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Send } from "lucide-react";
 import type { ChatMessage } from "@/types";
 import ReactMarkdown from "react-markdown";
 import { ChatMessageList } from "@/components/ui/chat-message-list";
 import { ChatBubble, ChatBubbleMessage } from "@/components/ui/chat-bubble";
-import { ChatInput } from "@/components/ui/chat-input";
+import { AIInput } from "@/components/ui/ai-input";
 import { useTextStream } from "@/components/ui/response-stream";
 
 interface ChatPanelProps {
@@ -16,29 +14,17 @@ interface ChatPanelProps {
 }
 
 export function ChatPanel({ messages, onSendMessage, isLoading, disabled }: ChatPanelProps) {
-  const [input, setInput] = useState("");
-
   // Get the last assistant message for typing animation
   const lastMessage = messages.length > 0 ? messages[messages.length - 1] : null;
   const { displayedText } = useTextStream({
     textStream: lastMessage?.role === "assistant" ? lastMessage.content : "",
-    speed: 45,
+    speed: 50,
     mode: "typewriter",
   });
 
-  const handleSend = async () => {
-    if (!input.trim() || isLoading || disabled) return;
-
-    const message = input;
-    setInput("");
+  const handleSend = async (message: string) => {
+    if (!message.trim() || isLoading || disabled) return;
     await onSendMessage(message);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
   };
 
   return (
@@ -96,33 +82,13 @@ export function ChatPanel({ messages, onSendMessage, isLoading, disabled }: Chat
       </div>
 
       <div className="p-4 border-t border-[hsl(var(--border-subtle))] bg-[hsl(var(--bg-panel-alt))]">
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            handleSend();
-          }}
-          className="relative rounded-lg border border-[hsl(var(--border-subtle))] bg-[hsl(var(--bg-input))] p-2"
-        >
-          <ChatInput
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder={disabled ? "Configure settings first..." : "Ask a question..."}
-            disabled={disabled || isLoading}
-            className="text-[hsl(var(--text-main))]"
-          />
-          <div className="flex items-center justify-end pt-2">
-            <Button
-              type="submit"
-              size="sm"
-              disabled={!input.trim() || isLoading || disabled}
-              className="gap-1.5 bg-[hsl(var(--btn-bg))] border border-[hsl(var(--btn-border))] hover:bg-[hsl(var(--btn-bg-hover))] text-[hsl(var(--text-main))]"
-            >
-              Send
-              <Send className="size-3.5" />
-            </Button>
-          </div>
-        </form>
+        <AIInput
+          placeholder={disabled ? "Configure settings first..." : "Ask a question..."}
+          disabled={disabled || isLoading}
+          onSubmit={handleSend}
+          minHeight={44}
+          maxHeight={150}
+        />
       </div>
     </div>
   );

@@ -1,6 +1,4 @@
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { getApiKey, getN8nBaseUrl, getN8nApiKey } from "@/lib/storage";
 import { callWebhook } from "@/lib/webhook";
@@ -8,7 +6,7 @@ import type { ChatMessage, WorkflowDetails } from "@/types";
 import type { DocumentationType } from "@/lib/openrouter";
 import { ChatMessageList } from "@/components/ui/chat-message-list";
 import { ChatBubble, ChatBubbleMessage } from "@/components/ui/chat-bubble";
-import { ChatInput } from "@/components/ui/chat-input";
+import { AIInput } from "@/components/ui/ai-input";
 import { useTextStream } from "@/components/ui/response-stream";
 import ReactMarkdown from "react-markdown";
 
@@ -38,18 +36,17 @@ export function DocumentationChat({
   docType,
 }: DocumentationChatProps) {
   const { toast } = useToast();
-  const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   // Get the last assistant message for typing animation
   const lastMessage = messages.length > 0 ? messages[messages.length - 1] : null;
   const { displayedText } = useTextStream({
     textStream: lastMessage?.role === "assistant" ? lastMessage.content : "",
-    speed: 45,
+    speed: 50,
     mode: "typewriter",
   });
 
-  const handleSend = async () => {
+  const handleSend = async (input: string) => {
     if (!input.trim() || isLoading || disabled) return;
 
     const apiKey = getApiKey();
@@ -85,7 +82,6 @@ export function DocumentationChat({
 
     const userMessage: ChatMessage = { role: "user", content: input };
     onMessagesChange([...messages, userMessage]);
-    setInput("");
     setIsLoading(true);
 
     try {
@@ -139,13 +135,6 @@ export function DocumentationChat({
       onMessagesChange(messages);
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
     }
   };
 
@@ -204,37 +193,17 @@ export function DocumentationChat({
       </div>
 
       <div className="p-4 border-t border-[hsl(var(--border-subtle))] bg-[hsl(var(--bg-panel-alt))]">
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            handleSend();
-          }}
-          className="relative rounded-lg border border-[hsl(var(--border-subtle))] bg-[hsl(var(--bg-input))] p-2"
-        >
-          <ChatInput
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder={
-              disabled
-                ? "Generate documentation first..."
-                : "E.g., 'Shorten the overview' or 'Add error handling'"
-            }
-            disabled={disabled || isLoading}
-            className="text-[hsl(var(--text-main))]"
-          />
-          <div className="flex items-center justify-end pt-2">
-            <Button
-              type="submit"
-              size="sm"
-              disabled={disabled || !input.trim() || isLoading}
-              className="gap-1.5 bg-[hsl(var(--btn-bg))] border border-[hsl(var(--btn-border))] hover:bg-[hsl(var(--btn-bg-hover))] text-[hsl(var(--text-main))]"
-            >
-              Send
-              <Send className="size-3.5" />
-            </Button>
-          </div>
-        </form>
+        <AIInput
+          placeholder={
+            disabled
+              ? "Generate documentation first..."
+              : "E.g., 'Shorten the overview' or 'Add error handling'"
+          }
+          disabled={disabled || isLoading}
+          onSubmit={handleSend}
+          minHeight={44}
+          maxHeight={150}
+        />
       </div>
     </div>
   );
