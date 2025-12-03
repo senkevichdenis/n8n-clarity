@@ -92,7 +92,7 @@ export const DesktopSidebar = ({
         className
       )}
       animate={{
-        width: animate ? (open ? "280px" : "60px") : "280px",
+        width: animate ? (open ? "280px" : "72px") : "280px",
       }}
       onMouseEnter={() => setOpen(true)}
       onMouseLeave={() => setOpen(false)}
@@ -173,7 +173,8 @@ export const SidebarLink = ({
     <button
       onClick={onClick}
       className={cn(
-        "flex items-center justify-start gap-3 group/sidebar py-3 px-3 rounded-lg w-full transition-colors",
+        "flex items-center gap-3 group/sidebar py-3 px-3 rounded-lg w-full transition-colors",
+        open ? "justify-start" : "justify-center",
         active
           ? "bg-[hsl(var(--tab-bg-active))] text-[hsl(var(--text-main))]"
           : "text-[hsl(var(--text-secondary))] hover:bg-[hsl(var(--tab-bg-active))] hover:text-[hsl(var(--text-main))]",
