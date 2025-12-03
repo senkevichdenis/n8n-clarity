@@ -225,7 +225,7 @@ const Index = () => {
 
     setIsGenerating(true);
     setIsTyping(true);
-    
+
     try {
       const result = await callWebhook({
         action: "explain_workflow",
@@ -236,6 +236,7 @@ const Index = () => {
         openRouterApiKey: "",
         n8nBaseUrl: n8nBaseUrl,
         n8nApiKey: n8nApiKey,
+        workflowData: workflowDetails || undefined,
         panelContext: {
           audience: audience.toLowerCase(),
           mode: mode.toLowerCase().replace(/ /g, "_"),
@@ -300,6 +301,7 @@ const Index = () => {
         openRouterApiKey: "",
         n8nBaseUrl: n8nBaseUrl,
         n8nApiKey: n8nApiKey,
+        workflowData: workflowDetails || undefined,
         panelContext: {
           currentExplanation: summaryContent || null,
           currentWeakPoints: null,

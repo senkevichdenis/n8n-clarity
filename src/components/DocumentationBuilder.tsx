@@ -37,6 +37,54 @@ export function DocumentationBuilder({
     details?: string;
   }>({ open: false, title: "", message: "" });
 
+  const loadWorkflowDetails = async (workflowId: string) => {
+    const n8nBaseUrl = getN8nBaseUrl();
+    const n8nApiKey = getN8nApiKey();
+
+    if (!n8nBaseUrl || !n8nApiKey) {
+      toast({
+        title: "Configuration Required",
+        description: "Please configure n8n credentials in Settings.",
+        variant: "destructive",
+      });
+      onSettingsClick();
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/n8n-api`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({
+            n8nBaseUrl,
+            n8nApiKey,
+            endpoint: `/api/v1/workflows/${workflowId}`,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch workflow details from n8n");
+      }
+
+      const data = await response.json();
+      setWorkflowDetails(data.data);
+    } catch (error) {
+      console.error("Error loading workflow details:", error);
+      toast({
+        title: "Failed to Load Workflow Details",
+        description: "Could not fetch workflow details from n8n. Please check your connection.",
+        variant: "destructive",
+      });
+      setWorkflowDetails(null);
+    }
+  };
+
   const handleWorkflowChange = (workflowId: string) => {
     const workflow = workflows.find(w => w.id === workflowId);
     console.log("[Docs] workflow selected", {
@@ -47,6 +95,7 @@ export function DocumentationBuilder({
     setSelectedWorkflowName(workflow?.name || "");
     setChatMessages([]);
     setMarkdown("");
+    loadWorkflowDetails(workflowId);
   };
 
   const handleGenerate = async () => {
@@ -99,6 +148,7 @@ export function DocumentationBuilder({
         openRouterApiKey: "",
         n8nBaseUrl: n8nBaseUrl,
         n8nApiKey: n8nApiKey,
+        workflowData: workflowDetails || undefined,
         panelContext: {
           docType: docTypeMap[docType],
           existingDoc: markdown || null,
@@ -180,6 +230,7 @@ export function DocumentationBuilder({
             selectedModel={selectedModel}
             workflowId={selectedWorkflowId || ""}
             workflowName={selectedWorkflowName}
+            workflowDetails={workflowDetails}
             docType={docType}
           />
         </div>

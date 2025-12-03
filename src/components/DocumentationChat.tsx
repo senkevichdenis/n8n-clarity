@@ -6,7 +6,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { getApiKey, getN8nBaseUrl, getN8nApiKey } from "@/lib/storage";
 import { callWebhook } from "@/lib/webhook";
-import type { ChatMessage } from "@/types";
+import type { ChatMessage, WorkflowDetails } from "@/types";
 import type { DocumentationType } from "@/lib/openrouter";
 import { TypingIndicator } from "./TypingAnimation";
 
@@ -19,6 +19,7 @@ interface DocumentationChatProps {
   selectedModel: string;
   workflowId: string;
   workflowName: string;
+  workflowDetails: WorkflowDetails | null;
   docType: DocumentationType;
 }
 
@@ -31,6 +32,7 @@ export function DocumentationChat({
   selectedModel,
   workflowId,
   workflowName,
+  workflowDetails,
   docType,
 }: DocumentationChatProps) {
   const { toast } = useToast();
@@ -93,6 +95,7 @@ export function DocumentationChat({
         openRouterApiKey: apiKey,
         n8nBaseUrl: n8nBaseUrl,
         n8nApiKey: n8nApiKey,
+        workflowData: workflowDetails || undefined,
         panelContext: {
           docType: docTypeMap[docType],
           currentDoc: markdown,
