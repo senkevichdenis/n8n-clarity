@@ -359,10 +359,10 @@ const Index = () => {
       <AppSidebar activeScreen={activeScreen} onScreenChange={setActiveScreen} />
 
       <main className="flex-1 overflow-auto">
-        <div className="p-8">
-          <div className="max-w-[1600px] mx-auto">
+        <div className="flex flex-col min-h-screen p-8">
+          <div className="max-w-[1600px] mx-auto flex-1 flex flex-col w-full">
             {activeScreen === "explain" && (
-              <>
+              <div className="flex flex-col flex-1">
                 <h1 className="text-2xl font-bold text-[hsl(var(--text-main))] mb-6">Explain My Automation</h1>
                 <WorkflowControls
                   workflows={workflows}
@@ -379,11 +379,11 @@ const Index = () => {
                   onModelChange={setSelectedModel}
                 />
 
-                <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 h-[calc(100vh-280px)]">
-                  <div className="lg:col-span-3">
+                <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 flex-1 mt-6 min-h-0">
+                  <div className="lg:col-span-3 min-h-0">
                     <SummaryPanel mode={mode} content={summaryContent} isLoading={isGenerating} />
                   </div>
-                  <div className="lg:col-span-2">
+                  <div className="lg:col-span-2 min-h-0">
                     <ChatPanel
                       messages={chatMessages}
                       onSendMessage={handleSendChatMessage}
@@ -392,22 +392,24 @@ const Index = () => {
                     />
                   </div>
                 </div>
-              </>
+              </div>
             )}
 
             {activeScreen === "documentation" && (
-              <>
+              <div className="flex flex-col flex-1">
                 <h1 className="text-2xl font-bold text-[hsl(var(--text-main))] mb-6">Documentation Builder</h1>
                 <DocumentationBuilder
                   workflows={workflows}
                   loadingWorkflows={loadingWorkflows}
                   onSettingsClick={() => setActiveScreen("settings")}
                 />
-              </>
+              </div>
             )}
 
             {activeScreen === "settings" && (
-              <SettingsScreen onSave={handleSettingsSave} />
+              <div>
+                <SettingsScreen onSave={handleSettingsSave} />
+              </div>
             )}
           </div>
         </div>

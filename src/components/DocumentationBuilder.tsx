@@ -142,7 +142,7 @@ export function DocumentationBuilder({
   };
 
   return (
-    <div>
+    <div className="flex flex-col flex-1">
       <WorkflowControls
         workflows={workflows}
         selectedWorkflowId={selectedWorkflowId}
@@ -161,8 +161,8 @@ export function DocumentationBuilder({
         onModelChange={setSelectedModel}
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 h-[calc(100vh-340px)]">
-        <div className="lg:col-span-3">
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 flex-1 mt-6 min-h-0">
+        <div className="lg:col-span-3 min-h-0">
           <DocumentationEditor
             markdown={markdown}
             onMarkdownChange={setMarkdown}
@@ -170,7 +170,7 @@ export function DocumentationBuilder({
             selectedModel={selectedModel}
           />
         </div>
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-2 min-h-0">
           <DocumentationChat
             messages={chatMessages}
             onMessagesChange={setChatMessages}
