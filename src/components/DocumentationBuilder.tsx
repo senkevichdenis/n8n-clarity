@@ -157,10 +157,6 @@ export function DocumentationBuilder({
 
       if (result.success && result.output) {
         setMarkdown(result.output);
-        toast({
-          title: "Documentation Generated",
-          description: "The workflow documentation has been completed successfully.",
-        });
       } else {
         throw new Error(result.error || "Failed to generate documentation");
       }

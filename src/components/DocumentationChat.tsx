@@ -45,7 +45,7 @@ export function DocumentationChat({
   const lastMessage = messages.length > 0 ? messages[messages.length - 1] : null;
   const { displayedText } = useTextStream({
     textStream: lastMessage?.role === "assistant" ? lastMessage.content : "",
-    speed: 30,
+    speed: 45,
     mode: "typewriter",
   });
 
@@ -209,7 +209,7 @@ export function DocumentationChat({
             e.preventDefault();
             handleSend();
           }}
-          className="relative rounded-lg border border-[hsl(var(--border-subtle))] bg-[hsl(var(--bg-input))] focus-within:ring-1 focus-within:ring-[hsl(var(--ring))] p-1"
+          className="relative rounded-lg border border-[hsl(var(--border-subtle))] bg-[hsl(var(--bg-input))] p-2"
         >
           <ChatInput
             value={input}
@@ -221,14 +221,14 @@ export function DocumentationChat({
                 : "E.g., 'Shorten the overview' or 'Add error handling'"
             }
             disabled={disabled || isLoading}
-            className="min-h-12 resize-none rounded-lg bg-[hsl(var(--bg-input))] border-0 p-3 shadow-none focus-visible:ring-0 text-[hsl(var(--text-main))]"
+            className="text-[hsl(var(--text-main))]"
           />
-          <div className="flex items-center p-3 pt-0 justify-end">
+          <div className="flex items-center justify-end pt-2">
             <Button
               type="submit"
               size="sm"
               disabled={disabled || !input.trim() || isLoading}
-              className="ml-auto gap-1.5 bg-[hsl(var(--btn-bg))] border border-[hsl(var(--btn-border))] hover:bg-[hsl(var(--btn-bg-hover))] text-[hsl(var(--text-main))]"
+              className="gap-1.5 bg-[hsl(var(--btn-bg))] border border-[hsl(var(--btn-border))] hover:bg-[hsl(var(--btn-bg-hover))] text-[hsl(var(--text-main))]"
             >
               Send
               <Send className="size-3.5" />
