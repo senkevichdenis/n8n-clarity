@@ -72,7 +72,7 @@ export function WorkflowControls({
               <button
                 key={aud}
                 onClick={() => onAudienceChange(aud)}
-                className={`px-4 py-2 text-sm border-r last:border-r-0 border-[hsl(var(--border-subtle))] transition-colors ${
+                className={`px-2.5 py-1.5 text-sm border-r last:border-r-0 border-[hsl(var(--border-subtle))] transition-colors ${
                   audience === aud
                     ? "bg-[hsl(var(--tab-bg-active))] text-[hsl(var(--text-main))]"
                     : "bg-transparent text-[hsl(var(--text-secondary))] hover:bg-[hsl(var(--tab-bg-active))]"
@@ -88,7 +88,7 @@ export function WorkflowControls({
               <button
                 key={m}
                 onClick={() => onModeChange(m)}
-                className={`px-4 py-2 text-sm border-r last:border-r-0 border-[hsl(var(--border-subtle))] transition-colors ${
+                className={`px-2.5 py-1.5 text-sm border-r last:border-r-0 border-[hsl(var(--border-subtle))] transition-colors whitespace-nowrap ${
                   mode === m
                     ? "bg-[hsl(var(--tab-bg-active))] text-[hsl(var(--text-main))]"
                     : "bg-transparent text-[hsl(var(--text-secondary))] hover:bg-[hsl(var(--tab-bg-active))]"
@@ -105,7 +105,7 @@ export function WorkflowControls({
             <button
               key={dt}
               onClick={() => onDocTypeChange?.(dt)}
-              className={`px-4 py-2 text-sm border-r last:border-r-0 border-[hsl(var(--border-subtle))] transition-colors ${
+              className={`px-2.5 py-1.5 text-sm border-r last:border-r-0 border-[hsl(var(--border-subtle))] transition-colors whitespace-nowrap ${
                 docType === dt
                   ? "bg-[hsl(var(--tab-bg-active))] text-[hsl(var(--text-main))]"
                   : "bg-transparent text-[hsl(var(--text-secondary))] hover:bg-[hsl(var(--tab-bg-active))]"
