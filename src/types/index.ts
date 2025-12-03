@@ -36,7 +36,7 @@ export const LLM_MODELS: LLMModel[] = [
   { id: "google/gemini-2.5-flash-preview-09-2025", label: "Gemini 2.5 Flash Preview (Sep 2025)", provider: "Google" },
 ];
 
-export const DEFAULT_MODEL = "anthropic/claude-sonnet-4.5";
+export const DEFAULT_MODEL = "openai/gpt-5-mini";
 
 export type Audience = "Engineer" | "Manager" | "Newbie";
 export type Mode = "Explanation" | "Weak Points" | "Executions Summary" | "Q&A Only";
