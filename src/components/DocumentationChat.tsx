@@ -157,7 +157,7 @@ export function DocumentationChat({
                 }`}
               >
                 <div className="text-xs mb-2 opacity-70 capitalize">{message.role}</div>
-                <div className="prose prose-invert prose-sm max-w-none text-[hsl(var(--text-main))] whitespace-pre-wrap">
+                <div className="text-base text-[hsl(var(--text-main))] whitespace-pre-wrap">
                   {message.content}
                 </div>
               </div>

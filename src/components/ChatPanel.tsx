@@ -68,7 +68,7 @@ export function ChatPanel({ messages, onSendMessage, isLoading, disabled }: Chat
                 } ${msg.role === "system" ? "italic text-[hsl(var(--chat-system-text))]" : "text-[hsl(var(--text-main))]"}`}
               >
                 <div className="text-xs mb-2 opacity-70 capitalize">{msg.role}</div>
-                <div className="prose prose-invert prose-sm max-w-none">
+                <div className="prose prose-invert max-w-none [&>*]:text-base">
                   <ReactMarkdown>{msg.content}</ReactMarkdown>
                 </div>
               </div>

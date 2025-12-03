@@ -137,9 +137,9 @@ export function SettingsScreen({ onSave }: SettingsScreenProps) {
   };
 
   return (
-    <div className="p-8 max-w-2xl">
+    <div className="max-w-2xl">
       <h1 className="text-2xl font-bold text-[hsl(var(--text-main))] mb-2">Settings</h1>
-      <p className="text-[hsl(var(--text-muted))] mb-8">
+      <p className="text-sm text-[hsl(var(--text-muted))] mb-6">
         Configure your n8n connection settings. Valid configurations are stored securely and persist across sessions.
       </p>
 
@@ -148,7 +148,7 @@ export function SettingsScreen({ onSave }: SettingsScreenProps) {
           {/* n8n Configuration */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-medium text-[hsl(var(--text-main))]">n8n Configuration</h3>
+              <h3 className="text-base font-medium text-[hsl(var(--text-main))]">n8n Configuration</h3>
               {n8nValid && !isEditingN8n && (
                 <Button
                   variant="ghost"
@@ -163,7 +163,7 @@ export function SettingsScreen({ onSave }: SettingsScreenProps) {
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="n8nBaseUrl" className="text-[hsl(var(--text-secondary))] flex items-center gap-2">
+              <Label htmlFor="n8nBaseUrl" className="text-sm text-[hsl(var(--text-secondary))] flex items-center gap-2">
                 N8N Base URL
                 {n8nValid && !isEditingN8n && (
                   <CheckCircle2 className="h-4 w-4 text-green-500" />
@@ -184,7 +184,7 @@ export function SettingsScreen({ onSave }: SettingsScreenProps) {
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="n8nApiKey" className="text-[hsl(var(--text-secondary))]">
+              <Label htmlFor="n8nApiKey" className="text-sm text-[hsl(var(--text-secondary))]">
                 N8N API Key
               </Label>
               <Input
