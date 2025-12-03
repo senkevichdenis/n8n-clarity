@@ -1,10 +1,12 @@
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Copy, Code } from "lucide-react";
+import { Copy, Code, FileText, Eye, Edit } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { getApiKey } from "@/lib/storage";
 import { generateStickyNotes } from "@/lib/openrouter";
 import { useState } from "react";
+import ReactMarkdown from "react-markdown";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { TypingIndicator } from "./TypingAnimation";
 
 interface DocumentationEditorProps {
@@ -22,12 +24,37 @@ export function DocumentationEditor({
 }: DocumentationEditorProps) {
   const { toast } = useToast();
   const [isGeneratingStickyNotes, setIsGeneratingStickyNotes] = useState(false);
+  const [viewMode, setViewMode] = useState<"edit" | "preview">("preview");
+
+  // Convert markdown to plain text (strip markdown syntax)
+  const markdownToPlainText = (md: string): string => {
+    return md
+      .replace(/^#{1,6}\s+/gm, '') // Remove headers
+      .replace(/\*\*(.+?)\*\*/g, '$1') // Remove bold
+      .replace(/\*(.+?)\*/g, '$1') // Remove italic
+      .replace(/\_\_(.+?)\_\_/g, '$1') // Remove bold (underscore)
+      .replace(/\_(.+?)\_/g, '$1') // Remove italic (underscore)
+      .replace(/\[(.+?)\]\(.+?\)/g, '$1') // Remove links, keep text
+      .replace(/`(.+?)`/g, '$1') // Remove inline code
+      .replace(/```[\s\S]*?```/g, '') // Remove code blocks
+      .replace(/^\s*[-*+]\s+/gm, '• ') // Convert lists to bullets
+      .replace(/^\s*\d+\.\s+/gm, '• '); // Convert numbered lists to bullets
+  };
 
   const handleCopyText = () => {
+    const plainText = markdownToPlainText(markdown);
+    navigator.clipboard.writeText(plainText);
+    toast({
+      title: "Copied to Clipboard",
+      description: "Plain text (without markdown) has been copied.",
+    });
+  };
+
+  const handleCopyMarkdown = () => {
     navigator.clipboard.writeText(markdown);
     toast({
       title: "Copied to Clipboard",
-      description: "Documentation text has been copied.",
+      description: "Markdown text has been copied.",
     });
   };
 
@@ -85,9 +112,37 @@ export function DocumentationEditor({
   return (
     <div className="bg-[hsl(var(--bg-panel))] border border-[hsl(var(--border-subtle))] rounded-lg h-full flex flex-col">
       <div className="border-b border-[hsl(var(--border-subtle))] p-4 flex justify-between items-center">
-        <h2 className="text-lg font-semibold text-[hsl(var(--text-main))]">
-          Documentation Editor
-        </h2>
+        <div className="flex items-center gap-3">
+          <h2 className="text-lg font-semibold text-[hsl(var(--text-main))]">
+            Documentation Editor
+          </h2>
+          {markdown.trim() && (
+            <div className="flex gap-1 bg-[hsl(var(--bg-panel-alt))] rounded-md p-1">
+              <Button
+                variant={viewMode === "preview" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setViewMode("preview")}
+                className={viewMode === "preview"
+                  ? "bg-[hsl(var(--btn-bg))] hover:bg-[hsl(var(--btn-bg-hover))]"
+                  : "hover:bg-[hsl(var(--bg-panel))]"}
+              >
+                <Eye className="h-4 w-4 mr-1" />
+                Preview
+              </Button>
+              <Button
+                variant={viewMode === "edit" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setViewMode("edit")}
+                className={viewMode === "edit"
+                  ? "bg-[hsl(var(--btn-bg))] hover:bg-[hsl(var(--btn-bg-hover))]"
+                  : "hover:bg-[hsl(var(--bg-panel))]"}
+              >
+                <Edit className="h-4 w-4 mr-1" />
+                Edit
+              </Button>
+            </div>
+          )}
+        </div>
         <div className="flex gap-2">
           <Button
             variant="outline"
@@ -98,6 +153,16 @@ export function DocumentationEditor({
           >
             <Copy className="h-4 w-4 mr-2" />
             Copy Text
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleCopyMarkdown}
+            disabled={!markdown.trim()}
+            className="bg-[hsl(var(--btn-bg))] border-[hsl(var(--btn-border))] hover:bg-[hsl(var(--btn-bg-hover))]"
+          >
+            <FileText className="h-4 w-4 mr-2" />
+            Copy Markdown
           </Button>
           <Button
             variant="outline"
@@ -120,6 +185,12 @@ export function DocumentationEditor({
           <p className="text-[hsl(var(--text-muted))]">
             Select a workflow, choose your settings, and click Generate Documentation to begin.
           </p>
+        ) : viewMode === "preview" ? (
+          <ScrollArea className="h-full">
+            <div className="prose prose-invert max-w-none text-[hsl(var(--text-main))]">
+              <ReactMarkdown>{markdown}</ReactMarkdown>
+            </div>
+          </ScrollArea>
         ) : (
           <Textarea
             value={markdown}
