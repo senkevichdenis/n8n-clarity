@@ -1,24 +1,21 @@
 import { useState, useEffect } from "react";
-import { Header } from "@/components/Header";
-import { SettingsModal } from "@/components/SettingsModal";
-import { TabSelector } from "@/components/TabSelector";
+import { AppSidebar, ActiveScreen } from "@/components/AppSidebar";
+import { SettingsScreen } from "@/components/SettingsScreen";
 import { WorkflowControls } from "@/components/WorkflowControls";
 import { SummaryPanel } from "@/components/SummaryPanel";
 import { ChatPanel } from "@/components/ChatPanel";
 import { DocumentationBuilder } from "@/components/DocumentationBuilder";
 import { ErrorDialog } from "@/components/ErrorDialog";
 import { useToast } from "@/hooks/use-toast";
-import { getApiKey, getN8nBaseUrl, getN8nApiKey, getModel, saveModel } from "@/lib/storage";
+import { getN8nBaseUrl, getN8nApiKey } from "@/lib/storage";
 import { callWebhook } from "@/lib/webhook";
 import type { Workflow, WorkflowDetails, Audience, Mode, ChatMessage, ExecutionsSummary } from "@/types";
-import { LLM_MODELS } from "@/types";
-import { TypingIndicator } from "@/components/TypingAnimation";
+import { DEFAULT_MODEL } from "@/types";
 
 const Index = () => {
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState<"explain" | "documentation">("explain");
-  const [settingsOpen, setSettingsOpen] = useState(false);
-  const [selectedModel, setSelectedModel] = useState(getModel() || LLM_MODELS[0].id);
+  const [activeScreen, setActiveScreen] = useState<ActiveScreen>("explain");
+  const [selectedModel, setSelectedModel] = useState(DEFAULT_MODEL);
   const [workflows, setWorkflows] = useState<Workflow[]>([]);
   const [loadingWorkflows, setLoadingWorkflows] = useState(false);
   const [selectedWorkflowId, setSelectedWorkflowId] = useState<string | null>(null);
@@ -38,13 +35,14 @@ const Index = () => {
     details?: string;
   }>({ open: false, title: "", message: "" });
 
-  // Check for API key on mount
+  // Check for n8n config on mount
   useEffect(() => {
-    const apiKey = getApiKey();
-    if (!apiKey) {
+    const n8nBaseUrl = getN8nBaseUrl();
+    const n8nApiKey = getN8nApiKey();
+    if (!n8nBaseUrl || !n8nApiKey) {
       toast({
-        title: "API Key Required",
-        description: "Please configure your OpenRouter API key in Settings to use the application.",
+        title: "Configuration Required",
+        description: "Please configure your n8n credentials in Settings to use the application.",
         variant: "destructive",
       });
     }
@@ -140,7 +138,7 @@ const Index = () => {
         description: "Please configure n8n credentials in Settings.",
         variant: "destructive",
       });
-      setSettingsOpen(true);
+      setActiveScreen("settings");
       return;
     }
 
@@ -191,13 +189,7 @@ const Index = () => {
     loadWorkflowDetails(workflowId);
   };
 
-  const handleModelChange = (model: string) => {
-    setSelectedModel(model);
-    saveModel(model);
-  };
-
   const handleGenerate = async () => {
-    const apiKey = getApiKey();
     const n8nBaseUrl = getN8nBaseUrl();
     const n8nApiKey = getN8nApiKey();
 
@@ -208,23 +200,13 @@ const Index = () => {
       model: selectedModel,
     });
 
-    if (!apiKey) {
-      toast({
-        title: "API Key Required",
-        description: "Please configure your OpenRouter API key in Settings.",
-        variant: "destructive",
-      });
-      setSettingsOpen(true);
-      return;
-    }
-
     if (!n8nBaseUrl || !n8nApiKey) {
       toast({
         title: "n8n Configuration Required",
         description: "Please configure n8n credentials in Settings.",
         variant: "destructive",
       });
-      setSettingsOpen(true);
+      setActiveScreen("settings");
       return;
     }
 
@@ -251,7 +233,7 @@ const Index = () => {
         workflowId: selectedWorkflowId,
         workflowName: selectedWorkflowName,
         llmModel: selectedModel,
-        openRouterApiKey: apiKey,
+        openRouterApiKey: "",
         n8nBaseUrl: n8nBaseUrl,
         n8nApiKey: n8nApiKey,
         panelContext: {
@@ -273,7 +255,6 @@ const Index = () => {
     } catch (error) {
       console.error("[Explain] Generation error:", error);
 
-      // Check if error has details property (from webhook.ts)
       const errorMessage = error && typeof error === 'object' && 'message' in error
         ? String(error.message)
         : error instanceof Error
@@ -299,11 +280,10 @@ const Index = () => {
   };
 
   const handleSendChatMessage = async (message: string) => {
-    const apiKey = getApiKey();
     const n8nBaseUrl = getN8nBaseUrl();
     const n8nApiKey = getN8nApiKey();
     
-    if (!apiKey || !selectedWorkflowId || !n8nBaseUrl || !n8nApiKey) return;
+    if (!selectedWorkflowId || !n8nBaseUrl || !n8nApiKey) return;
 
     const userMessage: ChatMessage = { role: "user", content: message };
     setChatMessages((prev) => [...prev, userMessage]);
@@ -317,7 +297,7 @@ const Index = () => {
         workflowId: selectedWorkflowId,
         workflowName: selectedWorkflowName,
         llmModel: selectedModel,
-        openRouterApiKey: apiKey,
+        openRouterApiKey: "",
         n8nBaseUrl: n8nBaseUrl,
         n8nApiKey: n8nApiKey,
         panelContext: {
@@ -340,7 +320,6 @@ const Index = () => {
     } catch (error) {
       console.error("Chat error:", error);
 
-      // Check if error has details property (from webhook.ts)
       const errorMessage = error && typeof error === 'object' && 'message' in error
         ? String(error.message)
         : error instanceof Error
@@ -365,79 +344,80 @@ const Index = () => {
     }
   };
 
-  const chatDisabled = !selectedWorkflowId || !getApiKey();
+  const chatDisabled = !selectedWorkflowId || !getN8nApiKey();
+
+  const handleSettingsSave = () => {
+    toast({
+      title: "Settings Saved",
+      description: "Your settings have been saved successfully.",
+    });
+    loadWorkflows();
+  };
 
   return (
-    <div className="min-h-screen bg-[hsl(var(--bg-page))] p-8">
-      <div className="max-w-[1800px] mx-auto">
-        <Header
-          selectedModel={selectedModel}
-          onModelChange={handleModelChange}
-          onSettingsClick={() => setSettingsOpen(true)}
-        />
+    <div className="min-h-screen flex w-full bg-[hsl(var(--bg-page))]">
+      <AppSidebar activeScreen={activeScreen} onScreenChange={setActiveScreen} />
+      
+      <main className="flex-1 p-8 overflow-auto">
+        <div className="max-w-[1600px] mx-auto">
+          {activeScreen === "explain" && (
+            <>
+              <h1 className="text-2xl font-bold text-[hsl(var(--text-main))] mb-6">Explain My Automation</h1>
+              <WorkflowControls
+                workflows={workflows}
+                selectedWorkflowId={selectedWorkflowId}
+                onWorkflowChange={handleWorkflowChange}
+                audience={audience}
+                onAudienceChange={setAudience}
+                mode={mode}
+                onModeChange={setMode}
+                onGenerate={handleGenerate}
+                isGenerating={isGenerating}
+                loadingWorkflows={loadingWorkflows}
+                selectedModel={selectedModel}
+                onModelChange={setSelectedModel}
+              />
 
-        <TabSelector activeTab={activeTab} onTabChange={setActiveTab} />
-
-        {activeTab === "explain" ? (
-          <>
-            <WorkflowControls
-              workflows={workflows}
-              selectedWorkflowId={selectedWorkflowId}
-              onWorkflowChange={handleWorkflowChange}
-              audience={audience}
-              onAudienceChange={setAudience}
-              mode={mode}
-              onModeChange={setMode}
-              onGenerate={handleGenerate}
-              isGenerating={isGenerating}
-              loadingWorkflows={loadingWorkflows}
-            />
-
-            <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 h-[calc(100vh-340px)]">
-              <div className="lg:col-span-3">
-                <SummaryPanel mode={mode} content={summaryContent} isLoading={isGenerating} />
+              <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 h-[calc(100vh-280px)]">
+                <div className="lg:col-span-3">
+                  <SummaryPanel mode={mode} content={summaryContent} isLoading={isGenerating} />
+                </div>
+                <div className="lg:col-span-2">
+                  <ChatPanel
+                    messages={chatMessages}
+                    onSendMessage={handleSendChatMessage}
+                    isLoading={isChatLoading}
+                    disabled={chatDisabled}
+                  />
+                </div>
               </div>
-              <div className="lg:col-span-2">
-                <ChatPanel
-                  messages={chatMessages}
-                  onSendMessage={handleSendChatMessage}
-                  isLoading={isChatLoading}
-                  disabled={chatDisabled}
-                />
-              </div>
-            </div>
-          </>
-        ) : (
-          <DocumentationBuilder
-            workflows={workflows}
-            loadingWorkflows={loadingWorkflows}
-            selectedModel={selectedModel}
-            onSettingsClick={() => setSettingsOpen(true)}
-          />
-        )}
+            </>
+          )}
 
-        <SettingsModal
-          open={settingsOpen}
-          onOpenChange={setSettingsOpen}
-          onSave={() => {
-            toast({
-              title: "Settings Saved",
-              description: "Your API settings have been saved successfully.",
-            });
-            loadWorkflows();
-          }}
-          selectedModel={selectedModel}
-          onModelChange={handleModelChange}
-        />
+          {activeScreen === "documentation" && (
+            <>
+              <h1 className="text-2xl font-bold text-[hsl(var(--text-main))] mb-6">Documentation Builder</h1>
+              <DocumentationBuilder
+                workflows={workflows}
+                loadingWorkflows={loadingWorkflows}
+                onSettingsClick={() => setActiveScreen("settings")}
+              />
+            </>
+          )}
 
-        <ErrorDialog
-          open={errorDialog.open}
-          onOpenChange={(open) => setErrorDialog({ ...errorDialog, open })}
-          title={errorDialog.title}
-          message={errorDialog.message}
-          details={errorDialog.details}
-        />
-      </div>
+          {activeScreen === "settings" && (
+            <SettingsScreen onSave={handleSettingsSave} />
+          )}
+        </div>
+      </main>
+
+      <ErrorDialog
+        open={errorDialog.open}
+        onOpenChange={(open) => setErrorDialog({ ...errorDialog, open })}
+        title={errorDialog.title}
+        message={errorDialog.message}
+        details={errorDialog.details}
+      />
     </div>
   );
 };

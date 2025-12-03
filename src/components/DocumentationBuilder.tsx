@@ -4,22 +4,21 @@ import { DocumentationEditor } from "./DocumentationEditor";
 import { DocumentationChat } from "./DocumentationChat";
 import { ErrorDialog } from "./ErrorDialog";
 import { useToast } from "@/hooks/use-toast";
-import { getApiKey, getN8nBaseUrl, getN8nApiKey } from "@/lib/storage";
+import { getN8nBaseUrl, getN8nApiKey } from "@/lib/storage";
 import { callWebhook } from "@/lib/webhook";
 import type { Workflow, WorkflowDetails, ChatMessage } from "@/types";
+import { DEFAULT_MODEL } from "@/types";
 import type { DocumentationType } from "@/lib/openrouter";
 
 interface DocumentationBuilderProps {
   workflows: Workflow[];
   loadingWorkflows: boolean;
-  selectedModel: string;
   onSettingsClick: () => void;
 }
 
 export function DocumentationBuilder({
   workflows,
   loadingWorkflows,
-  selectedModel,
   onSettingsClick,
 }: DocumentationBuilderProps) {
   const { toast } = useToast();
@@ -30,6 +29,7 @@ export function DocumentationBuilder({
   const [markdown, setMarkdown] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [selectedModel, setSelectedModel] = useState(DEFAULT_MODEL);
   const [errorDialog, setErrorDialog] = useState<{
     open: boolean;
     title: string;
@@ -50,7 +50,6 @@ export function DocumentationBuilder({
   };
 
   const handleGenerate = async () => {
-    const apiKey = getApiKey();
     const n8nBaseUrl = getN8nBaseUrl();
     const n8nApiKey = getN8nApiKey();
 
@@ -59,16 +58,6 @@ export function DocumentationBuilder({
       docType,
       model: selectedModel
     });
-
-    if (!apiKey) {
-      toast({
-        title: "API Key Required",
-        description: "Please configure your OpenRouter API key in Settings.",
-        variant: "destructive",
-      });
-      onSettingsClick();
-      return;
-    }
 
     if (!n8nBaseUrl || !n8nApiKey) {
       toast({
@@ -107,7 +96,7 @@ export function DocumentationBuilder({
         workflowId: selectedWorkflowId,
         workflowName: selectedWorkflowName,
         llmModel: selectedModel,
-        openRouterApiKey: apiKey,
+        openRouterApiKey: "",
         n8nBaseUrl: n8nBaseUrl,
         n8nApiKey: n8nApiKey,
         panelContext: {
@@ -168,6 +157,8 @@ export function DocumentationBuilder({
         isDocumentationMode
         docType={docType}
         onDocTypeChange={setDocType}
+        selectedModel={selectedModel}
+        onModelChange={setSelectedModel}
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 h-[calc(100vh-340px)]">
@@ -185,7 +176,7 @@ export function DocumentationBuilder({
             onMessagesChange={setChatMessages}
             markdown={markdown}
             onMarkdownChange={setMarkdown}
-            disabled={!selectedWorkflowId || !getApiKey()}
+            disabled={!selectedWorkflowId || !getN8nApiKey()}
             selectedModel={selectedModel}
             workflowId={selectedWorkflowId || ""}
             workflowName={selectedWorkflowName}
