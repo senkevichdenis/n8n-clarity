@@ -47,10 +47,10 @@ export function WorkflowControls({
   const canGenerate = selectedWorkflowId && !isGenerating && (!isDocumentationMode ? mode !== "Q&A Only" : true);
 
   return (
-    <div className="flex items-center gap-4 mb-6 flex-wrap">
+    <div className="flex items-center gap-2.5 mb-6 flex-wrap">
       <Select value={selectedWorkflowId || ""} onValueChange={onWorkflowChange} disabled={loadingWorkflows}>
-        <SelectTrigger className="w-[280px] bg-[hsl(var(--select-bg))] border-[hsl(var(--border-subtle))] text-[hsl(var(--text-main))]">
-          <SelectValue placeholder={loadingWorkflows ? "Loading workflows..." : "Select workflow"} />
+        <SelectTrigger className="w-[220px] bg-[hsl(var(--select-bg))] border-[hsl(var(--border-subtle))] text-[hsl(var(--text-main))] text-sm">
+          <SelectValue placeholder={loadingWorkflows ? "Loading..." : "Select workflow"} />
         </SelectTrigger>
         <SelectContent className="bg-[hsl(var(--select-menu-bg))] border-[hsl(var(--border-subtle))] z-50">
           {workflows.map((workflow) => (
@@ -122,17 +122,18 @@ export function WorkflowControls({
       <Button
         onClick={onGenerate}
         disabled={!canGenerate}
-        className="bg-[hsl(var(--btn-bg))] border border-[hsl(var(--btn-border))] hover:bg-[hsl(var(--btn-bg-hover))] text-[hsl(var(--text-main))] disabled:opacity-50"
+        size="sm"
+        className="bg-[hsl(var(--btn-bg))] border border-[hsl(var(--btn-border))] hover:bg-[hsl(var(--btn-bg-hover))] text-[hsl(var(--text-main))] disabled:opacity-50 h-9 px-3"
       >
         {isGenerating ? (
           <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Generating...
+            <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+            <span className="text-sm">Generating...</span>
           </>
         ) : isDocumentationMode ? (
-          "Generate Documentation"
+          <span className="text-sm">Generate Docs</span>
         ) : (
-          "Generate"
+          <span className="text-sm">Generate</span>
         )}
       </Button>
     </div>

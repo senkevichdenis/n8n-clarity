@@ -15,8 +15,8 @@ export function LLMModelSelector({ value, onChange, className }: LLMModelSelecto
 
   return (
     <Select value={value} onValueChange={onChange}>
-      <SelectTrigger className={`w-[200px] bg-[hsl(var(--select-bg))] border-[hsl(var(--border-subtle))] text-[hsl(var(--text-main))] ${className}`}>
-        <SelectValue placeholder="Select LLM Model" />
+      <SelectTrigger className={`w-[180px] bg-[hsl(var(--select-bg))] border-[hsl(var(--border-subtle))] text-[hsl(var(--text-main))] text-sm ${className}`}>
+        <SelectValue placeholder="Select Model" />
       </SelectTrigger>
       <SelectContent className="bg-[hsl(var(--select-menu-bg))] border-[hsl(var(--border-subtle))] z-50 max-h-[300px]">
         <SelectGroup>
