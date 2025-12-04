@@ -105,30 +105,34 @@ export async function callWebhook(payload: Omit<WebhookPayload, "clientMeta">): 
     // Extract output from n8n webhook response
     // The output field is a string (markdown/text) - do NOT parse it again
 
-    // NEW FORMAT: Handle chat interaction responses with responseType
-    // Expected format: { success: true, responseType: "chat_only" | "summary_update", chatMessage: "...", summaryUpdate?: "..." }
-    if (result && typeof result === 'object' && 'responseType' in result) {
-      console.log(`[Webhook] New format detected:`, {
-        responseType: result.responseType,
-        hasChatMessage: !!result.chatMessage,
-        hasSummaryUpdate: !!result.summaryUpdate,
-      });
+    // NEW FORMAT: Array with output object: [{ output: { success, responseType, systemMessage, chatMessage } }]
+    if (Array.isArray(result) && result.length > 0 && result[0].output && typeof result[0].output === 'object') {
+      const outputData = result[0].output;
 
-      return {
-        success: result.success ?? true,
-        responseType: result.responseType,
-        chatMessage: result.chatMessage,
-        summaryUpdate: result.summaryUpdate || null,
-      };
-    }
+      // Check if this is the new format with responseType
+      if ('responseType' in outputData) {
+        console.log(`[Webhook] New format detected:`, {
+          responseType: outputData.responseType,
+          hasChatMessage: !!outputData.chatMessage,
+          hasSystemMessage: !!outputData.systemMessage,
+        });
 
-    // LEGACY FORMAT: Array format [{ output: "..." }]
-    if (Array.isArray(result) && result.length > 0 && result[0].output) {
-      return { success: true, output: result[0].output };
+        return {
+          success: outputData.success ?? true,
+          responseType: outputData.responseType,
+          chatMessage: outputData.chatMessage,
+          systemMessage: outputData.systemMessage,
+        };
+      }
+
+      // Legacy: old format with just output string
+      if (typeof result[0].output === 'string') {
+        return { success: true, output: result[0].output };
+      }
     }
 
     // LEGACY FORMAT: Direct object format { output: "..." }
-    if (result && typeof result === 'object' && 'output' in result && result.output) {
+    if (result && typeof result === 'object' && 'output' in result && typeof result.output === 'string') {
       return { success: true, output: result.output };
     }
 

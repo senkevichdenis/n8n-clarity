@@ -116,28 +116,27 @@ export function DocumentationChat({
       if (result.success) {
         // NEW FORMAT: Handle responseType-based logic
         if (result.responseType) {
+          // Always add chat message to history
           const assistantMessage: ChatMessage = {
             role: "assistant",
             content: result.chatMessage || "Done.",
           };
-
-          // Always add messages to chat history
           const updatedMessages = [...messages, userMessage, assistantMessage];
           onMessagesChange(updatedMessages);
 
-          // Update Summary Section ONLY if responseType is "summary_update"
-          if (result.responseType === "summary_update" && result.summaryUpdate) {
-            console.log("[Chat] Updating Summary Section with new content");
-            // Validate that summaryUpdate is a string
-            const summaryText = typeof result.summaryUpdate === 'string'
-              ? result.summaryUpdate
-              : String(result.summaryUpdate || '');
+          // Update Summary Section ONLY if responseType is "summary_update" AND systemMessage is not null
+          if (result.responseType === "summary_update" && result.systemMessage) {
+            console.log("[Chat] Updating Summary Section with systemMessage");
+            // Validate that systemMessage is a string
+            const summaryText = typeof result.systemMessage === 'string'
+              ? result.systemMessage
+              : String(result.systemMessage || '');
             onMarkdownChange(summaryText);
-          } else {
+          } else if (result.responseType === "chat_only") {
             console.log("[Chat] Chat-only response, Summary Section unchanged");
           }
         }
-        // LEGACY FORMAT: Backward compatibility
+        // LEGACY FORMAT: Backward compatibility (for old documentation generation)
         else if (result.output) {
           const outputText = typeof result.output === 'string'
             ? result.output
@@ -145,7 +144,7 @@ export function DocumentationChat({
           onMarkdownChange(outputText);
           const assistantMessage: ChatMessage = {
             role: "assistant",
-            content: "Documentation updated successfully.",
+            content: "Updated.",
           };
           onMessagesChange([...messages, userMessage, assistantMessage]);
         } else {
