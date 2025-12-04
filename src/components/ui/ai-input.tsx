@@ -77,13 +77,13 @@ export function AIInput({
           type="button"
           disabled={disabled || !inputValue.trim()}
           className={cn(
-            "absolute bottom-3 right-3",
+            "absolute top-1/2 right-3",
             "rounded-full bg-[hsl(var(--btn-bg))] border border-[hsl(var(--btn-border))] hover:bg-[hsl(var(--btn-bg-hover))] p-2",
             "transition-all duration-300 ease-in-out",
             "disabled:cursor-not-allowed",
             inputValue.trim() && !disabled
-              ? "opacity-100 scale-100 translate-y-0"
-              : "opacity-0 scale-90 translate-y-1 pointer-events-none"
+              ? "opacity-100 scale-100 -translate-y-1/2"
+              : "opacity-0 scale-90 -translate-y-1/2 translate-y-1 pointer-events-none"
           )}
         >
           <CornerRightUp className="w-4 h-4 text-[hsl(var(--text-main))]" />
