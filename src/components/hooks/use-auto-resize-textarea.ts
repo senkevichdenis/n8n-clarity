@@ -21,6 +21,12 @@ export function useAutoResizeTextarea({
                 return;
             }
 
+            // If textarea is empty, reset to minHeight immediately
+            if (!textarea.value || textarea.value.trim() === "") {
+                textarea.style.height = `${minHeight}px`;
+                return;
+            }
+
             // Temporarily shrink to get the right scrollHeight
             textarea.style.height = `${minHeight}px`;
 

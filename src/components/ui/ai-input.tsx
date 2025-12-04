@@ -77,12 +77,12 @@ export function AIInput({
           type="button"
           disabled={disabled || !inputValue.trim()}
           className={cn(
-            "absolute top-1/2 -translate-y-1/2 right-3",
+            "absolute top-3 right-3",
             "rounded-lg bg-[hsl(var(--btn-bg))] border border-[hsl(var(--btn-border))] hover:bg-[hsl(var(--btn-bg-hover))] p-2",
             "transition-all duration-200",
             "disabled:opacity-50 disabled:cursor-not-allowed",
             inputValue.trim() && !disabled
-              ? "opacity-100 scale-100" 
+              ? "opacity-100 scale-100"
               : "opacity-50 scale-95"
           )}
         >

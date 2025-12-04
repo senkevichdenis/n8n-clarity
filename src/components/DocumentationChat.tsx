@@ -112,15 +112,39 @@ export function DocumentationChat({
         },
       });
 
-      if (result.success && result.output) {
-        onMarkdownChange(result.output);
-        const assistantMessage: ChatMessage = {
-          role: "assistant",
-          content: "Documentation updated successfully.",
-        };
-        onMessagesChange([...messages, userMessage, assistantMessage]);
+      if (result.success) {
+        // NEW FORMAT: Handle responseType-based logic
+        if (result.responseType) {
+          const assistantMessage: ChatMessage = {
+            role: "assistant",
+            content: result.chatMessage || "Done.",
+          };
+
+          // Always add messages to chat history
+          const updatedMessages = [...messages, userMessage, assistantMessage];
+          onMessagesChange(updatedMessages);
+
+          // Update Summary Section ONLY if responseType is "summary_update"
+          if (result.responseType === "summary_update" && result.summaryUpdate) {
+            console.log("[Chat] Updating Summary Section with new content");
+            onMarkdownChange(result.summaryUpdate);
+          } else {
+            console.log("[Chat] Chat-only response, Summary Section unchanged");
+          }
+        }
+        // LEGACY FORMAT: Backward compatibility
+        else if (result.output) {
+          onMarkdownChange(result.output);
+          const assistantMessage: ChatMessage = {
+            role: "assistant",
+            content: "Documentation updated successfully.",
+          };
+          onMessagesChange([...messages, userMessage, assistantMessage]);
+        } else {
+          throw new Error("Unexpected response format");
+        }
       } else {
-        throw new Error(result.error || "Failed to edit documentation");
+        throw new Error(result.error || "Failed to process request");
       }
     } catch (error) {
       console.error("Documentation edit error:", error);
