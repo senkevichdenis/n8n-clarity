@@ -43,22 +43,21 @@ export async function callWebhook(payload: Omit<WebhookPayload, "clientMeta">): 
     action: payload.action,
   });
 
+  // Set timeout to 120 seconds (n8n LLM processing can take time)
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 120000);
+
   try {
-    // Set timeout to 120 seconds (n8n LLM processing can take time)
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 120000);
+    const response = await fetch(WEBHOOK_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(fullPayload),
+      signal: controller.signal,
+    });
 
-    try {
-      const response = await fetch(WEBHOOK_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(fullPayload),
-        signal: controller.signal,
-      });
-
-      clearTimeout(timeoutId);
+    clearTimeout(timeoutId);
 
     // First get response as text to see what we got
     const responseText = await response.text();
@@ -136,22 +135,17 @@ export async function callWebhook(payload: Omit<WebhookPayload, "clientMeta">): 
     // Case 3: Unknown format - return as-is
     console.warn(`[Webhook] Unexpected response format:`, result);
     return result;
-    } catch (fetchError) {
-      clearTimeout(timeoutId);
-
-      // Handle timeout specifically
-      if (fetchError instanceof Error && fetchError.name === 'AbortError') {
-        console.error('[Webhook] Request timeout after 120 seconds');
-        throw new Error('Request timeout: n8n processing took too long. Please try again.');
-      }
-
-      throw fetchError;
-    }
   } catch (error) {
-    // Re-throw errors with details preserved
-    if (error && typeof error === 'object' && 'message' in error && 'details' in error) {
-      throw error;
+    clearTimeout(timeoutId);
+
+    // Handle timeout specifically
+    if (error instanceof Error && error.name === 'AbortError') {
+      console.error('[Webhook] Request timeout after 120 seconds');
+      throw new Error('Request timeout: n8n processing took too long. Please try again.');
     }
+
+    // Re-throw other errors
+    console.error('[Webhook] Error:', error);
     throw error;
   }
 }
