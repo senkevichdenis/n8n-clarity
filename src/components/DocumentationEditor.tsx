@@ -28,8 +28,11 @@ export function DocumentationEditor({
   const [viewMode, setViewMode] = useState<"edit" | "preview">("preview");
   const scrollEndRef = useRef<HTMLDivElement>(null);
 
+  // Ensure markdown is always a string to prevent runtime errors
+  const safeMarkdown = typeof markdown === 'string' ? markdown : String(markdown || '');
+
   const { displayedText } = useTextStream({
-    textStream: markdown,
+    textStream: safeMarkdown,
     speed: 80,
     mode: "typewriter",
   });
@@ -84,7 +87,7 @@ export function DocumentationEditor({
       return;
     }
 
-    if (!markdown.trim()) {
+    if (!safeMarkdown.trim()) {
       toast({
         title: "No Documentation",
         description: "Generate documentation first before creating Sticky Notes.",
@@ -131,7 +134,7 @@ export function DocumentationEditor({
           <h2 className="text-base font-semibold text-[hsl(var(--text-main))]">
             Documentation Editor
           </h2>
-          {markdown.trim() && (
+          {safeMarkdown.trim() && (
             <div className="flex gap-1 bg-[hsl(var(--bg-panel-alt))] rounded-md p-1">
               <Button
                 variant={viewMode === "preview" ? "default" : "ghost"}
@@ -163,7 +166,7 @@ export function DocumentationEditor({
             variant="outline"
             size="sm"
             onClick={handleCopyText}
-            disabled={!markdown.trim()}
+            disabled={!safeMarkdown.trim()}
             className="bg-[hsl(var(--btn-bg))] border-[hsl(var(--btn-border))] hover:bg-[hsl(var(--btn-bg-hover))] h-8 px-2.5 text-xs"
           >
             <Copy className="h-3.5 w-3.5 mr-1.5" />
@@ -173,7 +176,7 @@ export function DocumentationEditor({
             variant="outline"
             size="sm"
             onClick={handleCopyMarkdown}
-            disabled={!markdown.trim()}
+            disabled={!safeMarkdown.trim()}
             className="bg-[hsl(var(--btn-bg))] border-[hsl(var(--btn-border))] hover:bg-[hsl(var(--btn-bg-hover))] h-8 px-2.5 text-xs"
           >
             <FileText className="h-3.5 w-3.5 mr-1.5" />
@@ -183,7 +186,7 @@ export function DocumentationEditor({
             variant="outline"
             size="sm"
             onClick={handleCopyCode}
-            disabled={!markdown.trim() || isGeneratingStickyNotes}
+            disabled={!safeMarkdown.trim() || isGeneratingStickyNotes}
             className="bg-[hsl(var(--btn-bg))] border-[hsl(var(--btn-border))] hover:bg-[hsl(var(--btn-bg-hover))] h-8 px-2.5 text-xs"
           >
             <Code className="h-3.5 w-3.5 mr-1.5" />
@@ -196,7 +199,7 @@ export function DocumentationEditor({
           <div className="flex items-center justify-center h-32">
             <TypingIndicator variant="generation" />
           </div>
-        ) : !markdown.trim() ? (
+        ) : !safeMarkdown.trim() ? (
           <p className="text-[hsl(var(--text-muted))] text-sm">
             Select workflow and click Generate Docs to begin.
           </p>
@@ -221,7 +224,7 @@ export function DocumentationEditor({
           </ScrollArea>
         ) : (
           <Textarea
-            value={markdown}
+            value={safeMarkdown}
             onChange={(e) => onMarkdownChange(e.target.value)}
             className="h-full resize-none bg-[hsl(var(--bg-input))] border-[hsl(var(--border-subtle))] text-[hsl(var(--text-main))] font-mono text-sm"
             placeholder="Documentation will appear here..."

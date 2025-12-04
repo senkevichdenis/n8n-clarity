@@ -71,7 +71,8 @@ export function DocumentationChat({
       return;
     }
 
-    if (!markdown.trim()) {
+    const safeMarkdown = typeof markdown === 'string' ? markdown : String(markdown || '');
+    if (!safeMarkdown.trim()) {
       toast({
         title: "No Documentation",
         description: "Generate documentation first before editing via chat.",
@@ -104,7 +105,7 @@ export function DocumentationChat({
         workflowData: workflowDetails || undefined,
         panelContext: {
           docType: docTypeMap[docType],
-          currentDoc: markdown,
+          currentDoc: safeMarkdown,
         },
         chat: {
           input: input,
@@ -127,14 +128,21 @@ export function DocumentationChat({
           // Update Summary Section ONLY if responseType is "summary_update"
           if (result.responseType === "summary_update" && result.summaryUpdate) {
             console.log("[Chat] Updating Summary Section with new content");
-            onMarkdownChange(result.summaryUpdate);
+            // Validate that summaryUpdate is a string
+            const summaryText = typeof result.summaryUpdate === 'string'
+              ? result.summaryUpdate
+              : String(result.summaryUpdate || '');
+            onMarkdownChange(summaryText);
           } else {
             console.log("[Chat] Chat-only response, Summary Section unchanged");
           }
         }
         // LEGACY FORMAT: Backward compatibility
         else if (result.output) {
-          onMarkdownChange(result.output);
+          const outputText = typeof result.output === 'string'
+            ? result.output
+            : String(result.output || '');
+          onMarkdownChange(outputText);
           const assistantMessage: ChatMessage = {
             role: "assistant",
             content: "Documentation updated successfully.",
