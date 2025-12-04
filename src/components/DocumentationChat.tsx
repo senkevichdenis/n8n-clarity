@@ -8,6 +8,7 @@ import { ChatMessageList } from "@/components/ui/chat-message-list";
 import { ChatBubble, ChatBubbleMessage } from "@/components/ui/chat-bubble";
 import { AIInput } from "@/components/ui/ai-input";
 import { useTextStream } from "@/components/ui/response-stream";
+import { ErrorDialog } from "./ErrorDialog";
 import ReactMarkdown from "react-markdown";
 
 interface DocumentationChatProps {
@@ -37,6 +38,12 @@ export function DocumentationChat({
 }: DocumentationChatProps) {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [errorDialog, setErrorDialog] = useState<{
+    open: boolean;
+    title: string;
+    message: string;
+    details?: string;
+  }>({ open: false, title: "", message: "" });
 
   // Get the last assistant message for typing animation
   const lastMessage = messages.length > 0 ? messages[messages.length - 1] : null;
@@ -155,14 +162,28 @@ export function DocumentationChat({
       }
     } catch (error) {
       console.error("Documentation edit error:", error);
-      toast({
-        title: "Edit Failed",
-        description:
-          error instanceof Error ? error.message : "Failed to edit documentation.",
-        variant: "destructive",
+
+      // Check if error has details property (from webhook.ts)
+      const errorMessage = error && typeof error === 'object' && 'message' in error
+        ? String(error.message)
+        : error instanceof Error
+        ? error.message
+        : "Could not process chat request. Please try again.";
+
+      const errorDetails = error && typeof error === 'object' && 'details' in error
+        ? String(error.details)
+        : error instanceof Error && error.stack
+        ? error.stack
+        : undefined;
+
+      setErrorDialog({
+        open: true,
+        title: "Chat Request Failed",
+        message: errorMessage,
+        details: errorDetails,
       });
 
-      // Remove the user message since the edit failed
+      // Remove the user message since the request failed
       onMessagesChange(messages);
     } finally {
       setIsLoading(false);
@@ -236,6 +257,14 @@ export function DocumentationChat({
           maxHeight={150}
         />
       </div>
+
+      <ErrorDialog
+        open={errorDialog.open}
+        onOpenChange={(open) => setErrorDialog({ ...errorDialog, open })}
+        title={errorDialog.title}
+        message={errorDialog.message}
+        details={errorDialog.details}
+      />
     </div>
   );
 }

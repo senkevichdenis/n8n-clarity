@@ -105,13 +105,29 @@ export async function callWebhook(payload: Omit<WebhookPayload, "clientMeta">): 
     // Extract output from n8n webhook response
     // The output field is a string (markdown/text) - do NOT parse it again
 
-    // NEW FORMAT: Array with output object: [{ output: { success, responseType, systemMessage, chatMessage } }]
+    // NEW FORMAT 1: Direct object with responseType: { success, responseType, systemMessage, chatMessage }
+    if (result && typeof result === 'object' && 'responseType' in result) {
+      console.log(`[Webhook] New format (direct object) detected:`, {
+        responseType: result.responseType,
+        hasChatMessage: !!result.chatMessage,
+        hasSystemMessage: !!result.systemMessage,
+      });
+
+      return {
+        success: result.success ?? true,
+        responseType: result.responseType,
+        chatMessage: result.chatMessage,
+        systemMessage: result.systemMessage,
+      };
+    }
+
+    // NEW FORMAT 2: Array with output object: [{ output: { success, responseType, systemMessage, chatMessage } }]
     if (Array.isArray(result) && result.length > 0 && result[0].output && typeof result[0].output === 'object') {
       const outputData = result[0].output;
 
       // Check if this is the new format with responseType
       if ('responseType' in outputData) {
-        console.log(`[Webhook] New format detected:`, {
+        console.log(`[Webhook] New format (array with output) detected:`, {
           responseType: outputData.responseType,
           hasChatMessage: !!outputData.chatMessage,
           hasSystemMessage: !!outputData.systemMessage,
