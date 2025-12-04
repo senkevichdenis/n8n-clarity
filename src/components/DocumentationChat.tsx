@@ -42,7 +42,7 @@ export function DocumentationChat({
   const lastMessage = messages.length > 0 ? messages[messages.length - 1] : null;
   const { displayedText } = useTextStream({
     textStream: lastMessage?.role === "assistant" ? lastMessage.content : "",
-    speed: 50,
+    speed: 35,
     mode: "typewriter",
   });
 
