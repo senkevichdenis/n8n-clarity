@@ -43,9 +43,9 @@ export async function callWebhook(payload: Omit<WebhookPayload, "clientMeta">): 
     action: payload.action,
   });
 
-  // Set timeout to 120 seconds (n8n LLM processing can take time)
+  // Set timeout to 300 seconds (5 minutes) - n8n LLM processing can take time
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 120000);
+  const timeoutId = setTimeout(() => controller.abort(), 300000);
 
   try {
     const response = await fetch(WEBHOOK_URL, {
@@ -140,8 +140,8 @@ export async function callWebhook(payload: Omit<WebhookPayload, "clientMeta">): 
 
     // Handle timeout specifically
     if (error instanceof Error && error.name === 'AbortError') {
-      console.error('[Webhook] Request timeout after 120 seconds');
-      throw new Error('Request timeout: n8n processing took too long. Please try again.');
+      console.error('[Webhook] Request timeout after 300 seconds');
+      throw new Error('Request timeout: n8n processing took too long (>5 minutes). Please try again.');
     }
 
     // Re-throw other errors
