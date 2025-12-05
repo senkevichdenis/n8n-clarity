@@ -105,11 +105,12 @@ export async function callWebhook(payload: Omit<WebhookPayload, "clientMeta">): 
     // Extract output from n8n webhook response
     // The output field is a string (markdown/text) - do NOT parse it again
 
-    // NEW FORMAT 1: Direct object with responseType: { success, responseType, systemMessage, chatMessage }
+    // NEW FORMAT 1: Direct object with responseType: { success, responseType, summaryUpdate, chatMessage }
     if (result && typeof result === 'object' && !Array.isArray(result) && 'responseType' in result) {
       console.log(`[Webhook] Format 1 (direct object with responseType):`, {
         responseType: result.responseType,
         hasChatMessage: !!result.chatMessage,
+        hasSummaryUpdate: !!result.summaryUpdate,
         hasSystemMessage: !!result.systemMessage,
       });
 
@@ -117,11 +118,12 @@ export async function callWebhook(payload: Omit<WebhookPayload, "clientMeta">): 
         success: result.success ?? true,
         responseType: result.responseType,
         chatMessage: result.chatMessage,
-        systemMessage: result.systemMessage,
+        // Support both summaryUpdate and systemMessage (n8n may use either)
+        summaryUpdate: result.summaryUpdate || result.systemMessage || null,
       };
     }
 
-    // NEW FORMAT 2: Object with output object: { output: { success, responseType, systemMessage, chatMessage } }
+    // NEW FORMAT 2: Object with output object: { output: { success, responseType, summaryUpdate, chatMessage } }
     if (result && typeof result === 'object' && !Array.isArray(result) && 'output' in result && typeof result.output === 'object' && result.output !== null) {
       const outputData = result.output;
 
@@ -130,6 +132,7 @@ export async function callWebhook(payload: Omit<WebhookPayload, "clientMeta">): 
         console.log(`[Webhook] Format 2 (object with output object):`, {
           responseType: outputData.responseType,
           hasChatMessage: !!outputData.chatMessage,
+          hasSummaryUpdate: !!outputData.summaryUpdate,
           hasSystemMessage: !!outputData.systemMessage,
         });
 
@@ -137,7 +140,8 @@ export async function callWebhook(payload: Omit<WebhookPayload, "clientMeta">): 
           success: outputData.success ?? true,
           responseType: outputData.responseType,
           chatMessage: outputData.chatMessage,
-          systemMessage: outputData.systemMessage,
+          // Support both summaryUpdate and systemMessage (n8n may use either)
+          summaryUpdate: outputData.summaryUpdate || outputData.systemMessage || null,
         };
       }
 
@@ -148,7 +152,7 @@ export async function callWebhook(payload: Omit<WebhookPayload, "clientMeta">): 
       }
     }
 
-    // NEW FORMAT 3: Array with output object: [{ output: { success, responseType, systemMessage, chatMessage } }]
+    // NEW FORMAT 3: Array with output object: [{ output: { success, responseType, summaryUpdate, chatMessage } }]
     if (Array.isArray(result) && result.length > 0 && result[0].output && typeof result[0].output === 'object') {
       const outputData = result[0].output;
 
@@ -157,6 +161,7 @@ export async function callWebhook(payload: Omit<WebhookPayload, "clientMeta">): 
         console.log(`[Webhook] Format 3 (array with output object):`, {
           responseType: outputData.responseType,
           hasChatMessage: !!outputData.chatMessage,
+          hasSummaryUpdate: !!outputData.summaryUpdate,
           hasSystemMessage: !!outputData.systemMessage,
         });
 
@@ -164,7 +169,8 @@ export async function callWebhook(payload: Omit<WebhookPayload, "clientMeta">): 
           success: outputData.success ?? true,
           responseType: outputData.responseType,
           chatMessage: outputData.chatMessage,
-          systemMessage: outputData.systemMessage,
+          // Support both summaryUpdate and systemMessage (n8n may use either)
+          summaryUpdate: outputData.summaryUpdate || outputData.systemMessage || null,
         };
       }
 

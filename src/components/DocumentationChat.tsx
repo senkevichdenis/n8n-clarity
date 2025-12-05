@@ -131,13 +131,13 @@ export function DocumentationChat({
           const updatedMessages = [...messages, userMessage, assistantMessage];
           onMessagesChange(updatedMessages);
 
-          // Update Summary Section ONLY if responseType is "summary_update" AND systemMessage is not null
-          if (result.responseType === "summary_update" && result.systemMessage) {
-            console.log("[Chat] Updating Summary Section with systemMessage");
-            // Validate that systemMessage is a string
-            const summaryText = typeof result.systemMessage === 'string'
-              ? result.systemMessage
-              : String(result.systemMessage || '');
+          // Update Summary Section ONLY if responseType is "summary_update" AND summaryUpdate is not null
+          if (result.responseType === "summary_update" && result.summaryUpdate) {
+            console.log("[Chat] Updating Summary Section with summaryUpdate");
+            // Validate that summaryUpdate is a string
+            const summaryText = typeof result.summaryUpdate === 'string'
+              ? result.summaryUpdate
+              : String(result.summaryUpdate || '');
             onMarkdownChange(summaryText);
           } else if (result.responseType === "chat_only") {
             console.log("[Chat] Chat-only response, Summary Section unchanged");
