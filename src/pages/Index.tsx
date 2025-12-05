@@ -319,17 +319,26 @@ const Index = () => {
               ? result.summaryUpdate
               : String(result.summaryUpdate || '');
             setSummaryContent(summaryText);
-          }
 
-          // THEN add chat messages to history
-          const assistantMessage: ChatMessage = {
-            role: "assistant",
-            content: result.chatMessage || "Done.",
-          };
-          setChatMessages((prev) => [...prev, assistantMessage]);
+            // Calculate animation duration (80 chars per second in SummaryPanel)
+            const animationDuration = (summaryText.length / 80) * 1000;
 
-          if (result.responseType === "chat_only") {
+            // Wait for typing animation to complete before adding chat message
+            setTimeout(() => {
+              const assistantMessage: ChatMessage = {
+                role: "assistant",
+                content: result.chatMessage || "Done.",
+              };
+              setChatMessages((prev) => [...prev, assistantMessage]);
+            }, animationDuration);
+          } else if (result.responseType === "chat_only") {
             console.log("[Explain] Chat-only response, Summary unchanged");
+            // For chat_only, add messages immediately
+            const assistantMessage: ChatMessage = {
+              role: "assistant",
+              content: result.chatMessage || "Done.",
+            };
+            setChatMessages((prev) => [...prev, assistantMessage]);
           }
         }
         // LEGACY FORMAT: Backward compatibility

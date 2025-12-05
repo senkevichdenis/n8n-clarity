@@ -76,7 +76,7 @@ export function ChatPanel({ messages, onSendMessage, isLoading, disabled }: Chat
             {isLoading && (
               <ChatBubble variant="received">
                 <ChatBubbleMessage variant="received">
-                  <ShiningText text="Думаю..." />
+                  <ShiningText text="Thinking..." />
                 </ChatBubbleMessage>
               </ChatBubble>
             )}
