@@ -132,18 +132,28 @@ export function DocumentationChat({
               ? result.summaryUpdate
               : String(result.summaryUpdate || '');
             onMarkdownChange(summaryText);
-          }
 
-          // THEN add chat messages to history (after Summary is updated)
-          const assistantMessage: ChatMessage = {
-            role: "assistant",
-            content: result.chatMessage || "Done.",
-          };
-          const updatedMessages = [...messages, userMessage, assistantMessage];
-          onMessagesChange(updatedMessages);
+            // Calculate animation duration (80 chars per second in DocumentationEditor)
+            const animationDuration = (summaryText.length / 80) * 1000;
 
-          if (result.responseType === "chat_only") {
+            // Wait for typing animation to complete before adding chat message
+            setTimeout(() => {
+              const assistantMessage: ChatMessage = {
+                role: "assistant",
+                content: result.chatMessage || "Done.",
+              };
+              const updatedMessages = [...messages, userMessage, assistantMessage];
+              onMessagesChange(updatedMessages);
+            }, animationDuration);
+          } else if (result.responseType === "chat_only") {
             console.log("[Chat] Chat-only response, Summary Section unchanged");
+            // For chat_only, add messages immediately
+            const assistantMessage: ChatMessage = {
+              role: "assistant",
+              content: result.chatMessage || "Done.",
+            };
+            const updatedMessages = [...messages, userMessage, assistantMessage];
+            onMessagesChange(updatedMessages);
           }
         }
         // LEGACY FORMAT: Backward compatibility (for old documentation generation)
@@ -241,7 +251,7 @@ export function DocumentationChat({
             {isLoading && (
               <ChatBubble variant="received">
                 <ChatBubbleMessage variant="received">
-                  <ShiningText text="Компилирую ответ..." />
+                  <ShiningText text="Preparing response..." />
                 </ChatBubbleMessage>
               </ChatBubble>
             )}
