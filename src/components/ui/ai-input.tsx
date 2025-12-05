@@ -86,7 +86,7 @@ export function AIInput({
               : "opacity-0 scale-90 -translate-y-1/2 translate-y-1 pointer-events-none"
           )}
         >
-          <CornerRightUp className="w-4 h-4 text-[hsl(var(--text-main))]" />
+          <CornerRightUp className="w-3.5 h-3.5 text-[hsl(var(--text-main))]" />
         </button>
       </div>
     </div>
