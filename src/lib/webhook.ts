@@ -106,8 +106,8 @@ export async function callWebhook(payload: Omit<WebhookPayload, "clientMeta">): 
     // The output field is a string (markdown/text) - do NOT parse it again
 
     // NEW FORMAT 1: Direct object with responseType: { success, responseType, systemMessage, chatMessage }
-    if (result && typeof result === 'object' && 'responseType' in result) {
-      console.log(`[Webhook] New format (direct object) detected:`, {
+    if (result && typeof result === 'object' && !Array.isArray(result) && 'responseType' in result) {
+      console.log(`[Webhook] Format 1 (direct object with responseType):`, {
         responseType: result.responseType,
         hasChatMessage: !!result.chatMessage,
         hasSystemMessage: !!result.systemMessage,
@@ -121,13 +121,13 @@ export async function callWebhook(payload: Omit<WebhookPayload, "clientMeta">): 
       };
     }
 
-    // NEW FORMAT 2: Array with output object: [{ output: { success, responseType, systemMessage, chatMessage } }]
-    if (Array.isArray(result) && result.length > 0 && result[0].output && typeof result[0].output === 'object') {
-      const outputData = result[0].output;
+    // NEW FORMAT 2: Object with output object: { output: { success, responseType, systemMessage, chatMessage } }
+    if (result && typeof result === 'object' && !Array.isArray(result) && 'output' in result && typeof result.output === 'object' && result.output !== null) {
+      const outputData = result.output;
 
       // Check if this is the new format with responseType
       if ('responseType' in outputData) {
-        console.log(`[Webhook] New format (array with output) detected:`, {
+        console.log(`[Webhook] Format 2 (object with output object):`, {
           responseType: outputData.responseType,
           hasChatMessage: !!outputData.chatMessage,
           hasSystemMessage: !!outputData.systemMessage,
@@ -142,18 +142,41 @@ export async function callWebhook(payload: Omit<WebhookPayload, "clientMeta">): 
       }
 
       // Legacy: old format with just output string
+      if (typeof result.output === 'string') {
+        console.log(`[Webhook] Legacy format (object with output string)`);
+        return { success: true, output: result.output };
+      }
+    }
+
+    // NEW FORMAT 3: Array with output object: [{ output: { success, responseType, systemMessage, chatMessage } }]
+    if (Array.isArray(result) && result.length > 0 && result[0].output && typeof result[0].output === 'object') {
+      const outputData = result[0].output;
+
+      // Check if this is the new format with responseType
+      if ('responseType' in outputData) {
+        console.log(`[Webhook] Format 3 (array with output object):`, {
+          responseType: outputData.responseType,
+          hasChatMessage: !!outputData.chatMessage,
+          hasSystemMessage: !!outputData.systemMessage,
+        });
+
+        return {
+          success: outputData.success ?? true,
+          responseType: outputData.responseType,
+          chatMessage: outputData.chatMessage,
+          systemMessage: outputData.systemMessage,
+        };
+      }
+
+      // Legacy: old format with just output string in array
       if (typeof result[0].output === 'string') {
+        console.log(`[Webhook] Legacy format (array with output string)`);
         return { success: true, output: result[0].output };
       }
     }
 
-    // LEGACY FORMAT: Direct object format { output: "..." }
-    if (result && typeof result === 'object' && 'output' in result && typeof result.output === 'string') {
-      return { success: true, output: result.output };
-    }
-
-    // Case 3: Unknown format - return as-is
-    console.warn(`[Webhook] Unexpected response format:`, result);
+    // Case 4: Unknown format - return as-is
+    console.warn(`[Webhook] Unexpected response format - none of the known formats matched:`, result);
     return result;
   } catch (error) {
     clearTimeout(timeoutId);
