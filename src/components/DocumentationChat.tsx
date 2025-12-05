@@ -9,6 +9,7 @@ import { ChatBubble, ChatBubbleMessage } from "@/components/ui/chat-bubble";
 import { AIInput } from "@/components/ui/ai-input";
 import { useTextStream } from "@/components/ui/response-stream";
 import { ErrorDialog } from "./ErrorDialog";
+import { ShiningText } from "@/components/ui/shining-text";
 import ReactMarkdown from "react-markdown";
 
 interface DocumentationChatProps {
@@ -123,15 +124,7 @@ export function DocumentationChat({
       if (result.success) {
         // NEW FORMAT: Handle responseType-based logic
         if (result.responseType) {
-          // Always add chat message to history
-          const assistantMessage: ChatMessage = {
-            role: "assistant",
-            content: result.chatMessage || "Done.",
-          };
-          const updatedMessages = [...messages, userMessage, assistantMessage];
-          onMessagesChange(updatedMessages);
-
-          // Update Summary Section ONLY if responseType is "summary_update" AND summaryUpdate is not null
+          // Update Summary Section FIRST if responseType is "summary_update"
           if (result.responseType === "summary_update" && result.summaryUpdate) {
             console.log("[Chat] Updating Summary Section with summaryUpdate");
             // Validate that summaryUpdate is a string
@@ -139,7 +132,17 @@ export function DocumentationChat({
               ? result.summaryUpdate
               : String(result.summaryUpdate || '');
             onMarkdownChange(summaryText);
-          } else if (result.responseType === "chat_only") {
+          }
+
+          // THEN add chat messages to history (after Summary is updated)
+          const assistantMessage: ChatMessage = {
+            role: "assistant",
+            content: result.chatMessage || "Done.",
+          };
+          const updatedMessages = [...messages, userMessage, assistantMessage];
+          onMessagesChange(updatedMessages);
+
+          if (result.responseType === "chat_only") {
             console.log("[Chat] Chat-only response, Summary Section unchanged");
           }
         }
@@ -237,7 +240,9 @@ export function DocumentationChat({
 
             {isLoading && (
               <ChatBubble variant="received">
-                <ChatBubbleMessage variant="received" isLoading />
+                <ChatBubbleMessage variant="received">
+                  <ShiningText text="Компилирую ответ..." />
+                </ChatBubbleMessage>
               </ChatBubble>
             )}
           </ChatMessageList>

@@ -5,6 +5,7 @@ import { ChatMessageList } from "@/components/ui/chat-message-list";
 import { ChatBubble, ChatBubbleMessage } from "@/components/ui/chat-bubble";
 import { AIInput } from "@/components/ui/ai-input";
 import { useTextStream } from "@/components/ui/response-stream";
+import { ShiningText } from "@/components/ui/shining-text";
 
 interface ChatPanelProps {
   messages: ChatMessage[];
@@ -74,7 +75,9 @@ export function ChatPanel({ messages, onSendMessage, isLoading, disabled }: Chat
 
             {isLoading && (
               <ChatBubble variant="received">
-                <ChatBubbleMessage variant="received" isLoading />
+                <ChatBubbleMessage variant="received">
+                  <ShiningText text="Думаю..." />
+                </ChatBubbleMessage>
               </ChatBubble>
             )}
           </ChatMessageList>

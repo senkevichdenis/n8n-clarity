@@ -309,9 +309,36 @@ const Index = () => {
         },
       });
 
-      if (result.success && result.output) {
-        const assistantMessage: ChatMessage = { role: "assistant", content: result.output };
-        setChatMessages((prev) => [...prev, assistantMessage]);
+      if (result.success) {
+        // NEW FORMAT: Handle responseType-based logic (same as DocumentationChat)
+        if (result.responseType) {
+          // Update Summary FIRST if responseType is "summary_update"
+          if (result.responseType === "summary_update" && result.summaryUpdate) {
+            console.log("[Explain] Updating Summary with summaryUpdate");
+            const summaryText = typeof result.summaryUpdate === 'string'
+              ? result.summaryUpdate
+              : String(result.summaryUpdate || '');
+            setSummaryContent(summaryText);
+          }
+
+          // THEN add chat messages to history
+          const assistantMessage: ChatMessage = {
+            role: "assistant",
+            content: result.chatMessage || "Done.",
+          };
+          setChatMessages((prev) => [...prev, assistantMessage]);
+
+          if (result.responseType === "chat_only") {
+            console.log("[Explain] Chat-only response, Summary unchanged");
+          }
+        }
+        // LEGACY FORMAT: Backward compatibility
+        else if (result.output) {
+          const assistantMessage: ChatMessage = { role: "assistant", content: result.output };
+          setChatMessages((prev) => [...prev, assistantMessage]);
+        } else {
+          throw new Error("Unexpected response format");
+        }
       } else {
         throw new Error(result.error || "Failed to get response");
       }
